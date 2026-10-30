@@ -1,0 +1,6 @@
+{
+  "name": "Bais City Batang Pinoy 2026 Delegation Hub",
+  "description": "Comprehensive real-time cloud delegation tracking, whereabouts check-in, training, health, meals, and administrative reporting for Bais City at Batang Pinoy 2026.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

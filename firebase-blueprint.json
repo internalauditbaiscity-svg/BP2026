@@ -1,0 +1,220 @@
+{
+  "entities": {
+    "Member": {
+      "title": "Delegation Member",
+      "description": "Athlete, coach, chaperone, medical, or official belonging to the Bais City delegation",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "fullName": { "type": "string", "maxLength": 100 },
+        "role": { "type": "string", "enum": ["Athlete", "Coach", "Chaperone", "Medical Staff", "Delegation Official", "Admin"] },
+        "sport": { "type": "string", "enum": ["Arnis", "Taekwondo", "Athletics", "Futsal", "3x3 Basketball", "Beach Volleyball", "Badminton", "Table Tennis", "General"] },
+        "gender": { "type": "string", "enum": ["Male", "Female"] },
+        "age": { "type": "number" },
+        "billetingRoom": { "type": "string", "maxLength": 100 },
+        "emergencyContact": { "type": "string", "maxLength": 100 },
+        "accreditationNumber": { "type": "string", "maxLength": 50 },
+        "status": { "type": "string", "enum": ["Active", "Billeted", "Medical Hold", "Disqualified"] },
+        "env": { "type": "string", "enum": ["live", "practice"] },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["fullName", "role", "sport", "env"]
+    },
+    "CheckIn": {
+      "title": "Whereabouts and Check-in Log",
+      "description": "Attendance and whereabouts check-in log with date/time window and multiple athlete entries",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "date": { "type": "string" },
+        "timeWindow": { "type": "string", "maxLength": 60 },
+        "location": { "type": "string", "maxLength": 150 },
+        "activity": { "type": "string", "maxLength": 150 },
+        "participantIds": { "type": "array" },
+        "participantNames": { "type": "array" },
+        "sport": { "type": "string" },
+        "remarks": { "type": "string", "maxLength": 300 },
+        "submittedBy": { "type": "string", "maxLength": 100 },
+        "submittedByRole": { "type": "string" },
+        "env": { "type": "string", "enum": ["live", "practice"] },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["date", "timeWindow", "location", "activity", "env"]
+    },
+    "HealthLog": {
+      "title": "Health & Injury Monitoring",
+      "description": "Temperature and injury status log for delegation members",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "memberId": { "type": "string" },
+        "memberName": { "type": "string", "maxLength": 100 },
+        "sport": { "type": "string" },
+        "date": { "type": "string" },
+        "time": { "type": "string" },
+        "temperature": { "type": "number" },
+        "hasInjury": { "type": "boolean" },
+        "injuryType": { "type": "string", "maxLength": 150 },
+        "severity": { "type": "string", "enum": ["None", "Mild", "Moderate", "Severe"] },
+        "bodyPart": { "type": "string", "maxLength": 100 },
+        "clearedToPlay": { "type": "boolean" },
+        "notes": { "type": "string", "maxLength": 300 },
+        "loggedBy": { "type": "string", "maxLength": 100 },
+        "env": { "type": "string", "enum": ["live", "practice"] },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["memberName", "date", "env"]
+    },
+    "WinLossRecord": {
+      "title": "Daily Win-Loss Match Record",
+      "description": "Game results and tournament progression for Bais City athletes",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "date": { "type": "string" },
+        "sport": { "type": "string" },
+        "athleteOrTeam": { "type": "string", "maxLength": 100 },
+        "opponent": { "type": "string", "maxLength": 100 },
+        "roundStage": { "type": "string", "maxLength": 100 },
+        "score": { "type": "string", "maxLength": 50 },
+        "result": { "type": "string", "enum": ["Win", "Loss", "Draw", "Medal Match", "Gold", "Silver", "Bronze"] },
+        "remarks": { "type": "string", "maxLength": 300 },
+        "loggedBy": { "type": "string", "maxLength": 100 },
+        "env": { "type": "string", "enum": ["live", "practice"] },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["date", "sport", "athleteOrTeam", "opponent", "result", "env"]
+    },
+    "TrainingLog": {
+      "title": "Training Session Log",
+      "description": "Athlete drills, game simulation, practice time coverage and duration",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "date": { "type": "string" },
+        "sport": { "type": "string" },
+        "drillFocus": { "type": "string", "maxLength": 150 },
+        "startTime": { "type": "string" },
+        "endTime": { "type": "string" },
+        "durationMinutes": { "type": "number" },
+        "venue": { "type": "string", "maxLength": 150 },
+        "participantCount": { "type": "number" },
+        "participatingAthletes": { "type": "array" },
+        "coachInCharge": { "type": "string", "maxLength": 100 },
+        "notes": { "type": "string", "maxLength": 300 },
+        "env": { "type": "string", "enum": ["live", "practice"] },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["date", "sport", "drillFocus", "durationMinutes", "env"]
+    },
+    "MealLog": {
+      "title": "Meal Distribution Log",
+      "description": "Meal distribution and claiming tracking for athletes, coaches, and delegation",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "date": { "type": "string" },
+        "mealType": { "type": "string", "enum": ["Breakfast", "Lunch", "Dinner", "PM Snack"] },
+        "memberId": { "type": "string" },
+        "memberName": { "type": "string", "maxLength": 100 },
+        "memberRole": { "type": "string" },
+        "sport": { "type": "string" },
+        "claimed": { "type": "boolean" },
+        "claimedAt": { "type": "string" },
+        "claimedBy": { "type": "string", "maxLength": 100 },
+        "dietaryNotes": { "type": "string", "maxLength": 200 },
+        "env": { "type": "string", "enum": ["live", "practice"] }
+      },
+      "required": ["date", "mealType", "memberId", "memberName", "env"]
+    },
+    "AuditLog": {
+      "title": "Audit Trail Record",
+      "description": "Audit trail log for access, submissions, and administrative actions",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "userEmail": { "type": "string", "maxLength": 100 },
+        "userName": { "type": "string", "maxLength": 100 },
+        "userRole": { "type": "string" },
+        "actionType": { "type": "string", "enum": ["LOGIN", "LOGOUT", "SUBMIT_CHECKIN", "LOG_TRAINING", "DELETE_RECORD", "UPDATE_RECORD", "EXPORT_REPORT", "USER_MANAGEMENT", "CLAIM_MEAL"] },
+        "details": { "type": "string", "maxLength": 500 },
+        "targetEntity": { "type": "string", "maxLength": 100 },
+        "env": { "type": "string", "enum": ["live", "practice"] }
+      },
+      "required": ["timestamp", "userEmail", "actionType", "env"]
+    },
+    "AppUser": {
+      "title": "App User Account",
+      "description": "Authorized user credential and role profile in User Maintenance",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "email": { "type": "string", "maxLength": 100 },
+        "fullName": { "type": "string", "maxLength": 100 },
+        "role": { "type": "string", "enum": ["Administrator", "Coach", "Chaperone", "Medical Staff", "Delegation Official"] },
+        "sport": { "type": "string" },
+        "status": { "type": "string", "enum": ["Active", "Inactive", "Suspended"] },
+        "createdAt": { "type": "string" },
+        "lastLogin": { "type": "string" }
+      },
+      "required": ["email", "fullName", "role"]
+    },
+    "PushAlert": {
+      "title": "Push Notification Alert",
+      "description": "System alert or announcement broadcast to delegation members",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string", "maxLength": 150 },
+        "message": { "type": "string", "maxLength": 500 },
+        "priority": { "type": "string", "enum": ["low", "normal", "high", "urgent"] },
+        "targetAudience": { "type": "string" },
+        "sender": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "readBy": { "type": "array" }
+      },
+      "required": ["title", "message", "priority"]
+    }
+  },
+  "firestore": {
+    "/members/{memberId}": {
+      "schema": "Member",
+      "description": "Athletes, coaches, chaperones and officials registry"
+    },
+    "/checkins/{checkinId}": {
+      "schema": "CheckIn",
+      "description": "Daily real-time whereabouts and attendance submissions"
+    },
+    "/health_logs/{healthLogId}": {
+      "schema": "HealthLog",
+      "description": "Temperature and injury logs"
+    },
+    "/win_loss_records/{recordId}": {
+      "schema": "WinLossRecord",
+      "description": "Daily game competition results"
+    },
+    "/training_logs/{logId}": {
+      "schema": "TrainingLog",
+      "description": "Practice sessions, drills and time coverage"
+    },
+    "/meal_logs/{mealLogId}": {
+      "schema": "MealLog",
+      "description": "Meal distribution and claiming tracking"
+    },
+    "/audit_logs/{auditId}": {
+      "schema": "AuditLog",
+      "description": "Administrative access and submission audit logs"
+    },
+    "/app_users/{userId}": {
+      "schema": "AppUser",
+      "description": "User profiles and role management"
+    },
+    "/notifications/{notificationId}": {
+      "schema": "PushAlert",
+      "description": "System and delegation broadcast alerts"
+    }
+  }
+}

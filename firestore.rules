@@ -1,0 +1,59 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Catch-all safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Connection testing
+    match /test/{docId} {
+      allow read, write: if true;
+    }
+
+    // Members registry
+    match /members/{memberId} {
+      allow read, write: if true;
+    }
+
+    // Whereabouts and check-ins
+    match /checkins/{checkinId} {
+      allow read, write: if true;
+    }
+
+    // Health, Temperature & Injuries
+    match /health_logs/{healthLogId} {
+      allow read, write: if true;
+    }
+
+    // Tournament win-loss records
+    match /win_loss_records/{recordId} {
+      allow read, write: if true;
+    }
+
+    // Training monitoring
+    match /training_logs/{logId} {
+      allow read, write: if true;
+    }
+
+    // Meal distribution & claiming
+    match /meal_logs/{mealLogId} {
+      allow read, write: if true;
+    }
+
+    // Audit logs (accessible by delegation operations & admin reporting)
+    match /audit_logs/{auditId} {
+      allow read, write: if true;
+    }
+
+    // User maintenance & roles
+    match /app_users/{userId} {
+      allow read, write: if true;
+    }
+
+    // System and push alerts
+    match /notifications/{notificationId} {
+      allow read, write: if true;
+    }
+  }
+}
