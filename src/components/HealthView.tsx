@@ -15,13 +15,15 @@ import {
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
+import { AdminDeleteAllModal } from './AdminDeleteAllModal';
 import { HealthRecord, SportType } from '../types';
 
 export const HealthView: React.FC = () => {
-  const { members, healthLogs, logHealth, deleteHealthLog } = useData();
-  const { currentUser } = useAuth();
+  const { members, healthLogs, logHealth, deleteHealthLog, deleteAllHealthLogs } = useData();
+  const { currentUser, isAdmin } = useAuth();
 
   const [showForm, setShowForm] = useState(false);
+  const [showDeleteAll, setShowDeleteAll] = useState(false);
   const [memberId, setMemberId] = useState('');
   const [date, setDate] = useState('2026-12-10');
   const [time, setTime] = useState('08:00');
@@ -121,13 +123,27 @@ export const HealthView: React.FC = () => {
           </p>
         </div>
 
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 shrink-0"
-        >
-          {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-          {showForm ? 'Close Health Form' : 'Log Temperature / Injury'}
-        </button>
+        <div className="flex items-center gap-2">
+          {isAdmin && healthLogs.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowDeleteAll(true)}
+              className="px-3.5 py-2.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-800 font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 shrink-0"
+              title="Delete all medical logs (Admin only)"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+              <span>Delete All</span>
+            </button>
+          )}
+
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 shrink-0"
+          >
+            {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+            {showForm ? 'Close Health Form' : 'Log Temperature / Injury'}
+          </button>
+        </div>
       </div>
 
       {/* Entry Form */}
@@ -467,6 +483,15 @@ export const HealthView: React.FC = () => {
         itemName={deleteTarget?.desc || 'Health Record'}
         onConfirm={confirmDelete}
         onCancel={() => setDeleteTarget(null)}
+      />
+
+      {/* Admin Security Purge Modal */}
+      <AdminDeleteAllModal
+        isOpen={showDeleteAll}
+        moduleTitle="Temperature & Medical Logs"
+        itemCount={healthLogs.length}
+        onConfirm={deleteAllHealthLogs}
+        onClose={() => setShowDeleteAll(false)}
       />
 
     </div>

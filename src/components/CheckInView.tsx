@@ -20,6 +20,7 @@ import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { useDatabaseEnv } from '../context/DatabaseEnvContext';
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
+import { AdminDeleteAllModal } from './AdminDeleteAllModal';
 import { SportType } from '../types';
 
 const COMMON_LOCATIONS = [
@@ -49,12 +50,13 @@ const COMMON_ACTIVITIES = [
 ];
 
 export const CheckInView: React.FC = () => {
-  const { members, checkins, submitCheckIn, deleteCheckIn } = useData();
+  const { members, checkins, submitCheckIn, deleteCheckIn, deleteAllCheckIns } = useData();
   const { currentUser, isAdmin } = useAuth();
   const { env } = useDatabaseEnv();
 
   // Form states
   const [showForm, setShowForm] = useState(false);
+  const [showDeleteAll, setShowDeleteAll] = useState(false);
   const [date, setDate] = useState('2026-12-10');
   const [startTime, setStartTime] = useState('06:00');
   const [endTime, setEndTime] = useState('07:30');
@@ -183,13 +185,27 @@ export const CheckInView: React.FC = () => {
           </p>
         </div>
 
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 shrink-0"
-        >
-          {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-          {showForm ? 'Close Entry Form' : 'New Whereabouts Check-In'}
-        </button>
+        <div className="flex items-center gap-2">
+          {isAdmin && checkins.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowDeleteAll(true)}
+              className="px-3.5 py-2.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-800 font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 shrink-0"
+              title="Delete all check-ins (Admin only)"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+              <span>Delete All</span>
+            </button>
+          )}
+
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 shrink-0"
+          >
+            {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+            {showForm ? 'Close Entry Form' : 'New Whereabouts Check-In'}
+          </button>
+        </div>
       </div>
 
       {/* Check-In Submission Form (Multi-Athlete Entry) */}
@@ -573,6 +589,15 @@ export const CheckInView: React.FC = () => {
         itemName={deleteTarget?.desc || 'Check-in'}
         onConfirm={confirmDelete}
         onCancel={() => setDeleteTarget(null)}
+      />
+
+      {/* Admin Security Purge Modal */}
+      <AdminDeleteAllModal
+        isOpen={showDeleteAll}
+        moduleTitle="Whereabouts Check-Ins"
+        itemCount={checkins.length}
+        onConfirm={deleteAllCheckIns}
+        onClose={() => setShowDeleteAll(false)}
       />
 
     </div>

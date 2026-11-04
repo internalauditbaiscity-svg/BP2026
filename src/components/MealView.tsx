@@ -15,16 +15,18 @@ import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { computeMealStats } from '../utils/pureLogic';
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
+import { AdminDeleteAllModal } from './AdminDeleteAllModal';
 
 export const MealView: React.FC = () => {
-  const { members, mealLogs, claimMeal, batchCreateMealsForDate, deleteMealRecord } = useData();
-  const { currentUser } = useAuth();
+  const { members, mealLogs, claimMeal, batchCreateMealsForDate, deleteMealRecord, deleteAllMealLogs } = useData();
+  const { currentUser, isAdmin } = useAuth();
 
   const [selectedDate, setSelectedDate] = useState('2026-12-10');
   const [activeMealType, setActiveMealType] = useState<'Breakfast' | 'Lunch' | 'Dinner' | 'PM Snack'>('Breakfast');
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('All');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [showDeleteAll, setShowDeleteAll] = useState(false);
 
   // Delete modal
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; desc: string } | null>(null);
@@ -85,14 +87,28 @@ export const MealView: React.FC = () => {
           </p>
         </div>
 
-        <button
-          onClick={handleGenerateRoster}
-          disabled={isGenerating || members.length === 0}
-          className="px-4 py-2.5 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 shrink-0 disabled:opacity-50"
-        >
-          <Sparkles className="w-4 h-4" />
-          {isGenerating ? 'Generating...' : `Generate Roster for ${activeMealType}`}
-        </button>
+        <div className="flex items-center gap-2">
+          {isAdmin && mealLogs.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowDeleteAll(true)}
+              className="px-3.5 py-2.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-800 font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 shrink-0"
+              title="Delete all meal records (Admin only)"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+              <span>Delete All</span>
+            </button>
+          )}
+
+          <button
+            onClick={handleGenerateRoster}
+            disabled={isGenerating || members.length === 0}
+            className="px-4 py-2.5 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 shrink-0 disabled:opacity-50"
+          >
+            <Sparkles className="w-4 h-4" />
+            {isGenerating ? 'Generating...' : `Generate Roster for ${activeMealType}`}
+          </button>
+        </div>
       </div>
 
       {/* Date & Meal Type Selector Bar */}
@@ -289,6 +305,15 @@ export const MealView: React.FC = () => {
         itemName={deleteTarget?.desc || 'Meal'}
         onConfirm={confirmDelete}
         onCancel={() => setDeleteTarget(null)}
+      />
+
+      {/* Admin Security Purge Modal */}
+      <AdminDeleteAllModal
+        isOpen={showDeleteAll}
+        moduleTitle="Meal Claiming Records"
+        itemCount={mealLogs.length}
+        onConfirm={deleteAllMealLogs}
+        onClose={() => setShowDeleteAll(false)}
       />
 
     </div>

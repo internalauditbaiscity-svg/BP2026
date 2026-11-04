@@ -6,6 +6,7 @@ import {
   setDoc, 
   deleteDoc, 
   updateDoc, 
+  getDocs,
   query, 
   where 
 } from 'firebase/firestore';
@@ -39,27 +40,33 @@ interface DataContextType {
   // Member actions
   saveMember: (member: Omit<DelegationMember, 'id' | 'createdAt' | 'env'>, id?: string) => Promise<void>;
   deleteMember: (id: string, name: string) => Promise<void>;
+  deleteAllMembers: () => Promise<void>;
 
   // Check-in actions (Multi-athlete entry)
   submitCheckIn: (data: Omit<CheckInRecord, 'id' | 'createdAt' | 'env'>) => Promise<void>;
   deleteCheckIn: (id: string) => Promise<void>;
+  deleteAllCheckIns: () => Promise<void>;
 
   // Health actions
   logHealth: (data: Omit<HealthRecord, 'id' | 'createdAt' | 'env'>) => Promise<void>;
   deleteHealthLog: (id: string) => Promise<void>;
+  deleteAllHealthLogs: () => Promise<void>;
 
   // Win/Loss actions
   saveWinLoss: (data: Omit<WinLossRecord, 'id' | 'createdAt' | 'env'>, id?: string) => Promise<void>;
   deleteWinLoss: (id: string) => Promise<void>;
+  deleteAllWinLossRecords: () => Promise<void>;
 
   // Training actions (with Cancel, Edit, Delete)
   saveTraining: (data: Omit<TrainingRecord, 'id' | 'createdAt' | 'env'>, id?: string) => Promise<void>;
   deleteTraining: (id: string) => Promise<void>;
+  deleteAllTrainingLogs: () => Promise<void>;
 
   // Meal distribution actions
   claimMeal: (mealId: string, claimed: boolean, claimedBy: string) => Promise<void>;
   batchCreateMealsForDate: (date: string, mealType: 'Breakfast' | 'Lunch' | 'Dinner' | 'PM Snack') => Promise<number>;
   deleteMealRecord: (id: string) => Promise<void>;
+  deleteAllMealLogs: () => Promise<void>;
 
   // Notifications
   broadcastNotification: (title: string, message: string, priority?: PushAlert['priority']) => Promise<void>;
@@ -102,11 +109,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const q = query(collection(db, colName));
         const unsub = onSnapshot(q, (snapshot) => {
           const list: any[] = [];
-          snapshot.forEach((doc) => {
-            const data = doc.data();
-            // Filter by current env if doc has env, or treat default
-            if (!data.env || data.env === env) {
-              list.push({ id: doc.id, ...data });
+          const seen = new Set<string>();
+          snapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            // Strictly check environment: default to 'live' if omitted
+            const docEnv = data.env || 'live';
+            if (docEnv === env && !seen.has(docSnap.id)) {
+              seen.add(docSnap.id);
+              list.push({ id: docSnap.id, ...data, env: docEnv });
             }
           });
           setter(list);
@@ -151,7 +161,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // MEMBER MANAGEMENT
   const saveMember = async (memberData: Omit<DelegationMember, 'id' | 'createdAt' | 'env'>, id?: string) => {
-    const memberId = id || 'mem_' + Date.now();
+    const memberId = id || 'mem_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
     const docData: DelegationMember = {
       ...memberData,
       id: memberId,
@@ -204,9 +214,42 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const deleteAllMembers = async () => {
+    const toDeleteCount = members.length;
+    setMembers([]);
+    localStorage.removeItem(cacheKey('members'));
+
+    try {
+      const snap = await getDocs(collection(db, 'members'));
+      const deletePromises: Promise<void>[] = [];
+      snap.forEach((d) => {
+        const docData = d.data();
+        const docEnv = docData.env || 'live';
+        if (docEnv === env) {
+          deletePromises.push(deleteDoc(d.ref));
+        }
+      });
+      await Promise.all(deletePromises);
+    } catch (e) {
+      console.warn('Error deleting all members from Firestore:', e);
+    }
+
+    if (currentUser) {
+      await logAuditEvent(
+        currentUser.email,
+        currentUser.fullName,
+        currentUser.role,
+        'DELETE_RECORD',
+        `Administrator executed DELETE ALL on Delegation Registry (${toDeleteCount} members erased) in ${env.toUpperCase()} database.`,
+        'MEMBERS',
+        env
+      );
+    }
+  };
+
   // CHECK-IN (WHEREABOUTS)
   const submitCheckIn = async (data: Omit<CheckInRecord, 'id' | 'createdAt' | 'env'>) => {
-    const checkinId = 'chk_' + Date.now();
+    const checkinId = 'chk_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
     const record: CheckInRecord = {
       ...data,
       id: checkinId,
@@ -219,7 +262,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (e) {
       console.warn('Saving checkin locally:', e);
     }
-    setCheckins(prev => [record, ...prev]);
+    setCheckins(prev => {
+      const exists = prev.some(c => c.id === checkinId);
+      return exists ? prev.map(c => c.id === checkinId ? record : c) : [record, ...prev];
+    });
 
     if (currentUser) {
       await logAuditEvent(
@@ -254,9 +300,42 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const deleteAllCheckIns = async () => {
+    const toDeleteCount = checkins.length;
+    setCheckins([]);
+    localStorage.removeItem(cacheKey('checkins'));
+
+    try {
+      const snap = await getDocs(collection(db, 'checkins'));
+      const deletePromises: Promise<void>[] = [];
+      snap.forEach((d) => {
+        const docData = d.data();
+        const docEnv = docData.env || 'live';
+        if (docEnv === env) {
+          deletePromises.push(deleteDoc(d.ref));
+        }
+      });
+      await Promise.all(deletePromises);
+    } catch (e) {
+      console.warn('Error deleting all checkins from Firestore:', e);
+    }
+
+    if (currentUser) {
+      await logAuditEvent(
+        currentUser.email,
+        currentUser.fullName,
+        currentUser.role,
+        'DELETE_RECORD',
+        `Administrator executed DELETE ALL on Whereabouts Check-Ins (${toDeleteCount} records erased) in ${env.toUpperCase()} database.`,
+        'CHECKINS',
+        env
+      );
+    }
+  };
+
   // HEALTH & TEMPERATURE
   const logHealth = async (data: Omit<HealthRecord, 'id' | 'createdAt' | 'env'>) => {
-    const healthId = 'hlt_' + Date.now();
+    const healthId = 'hlt_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
     const record: HealthRecord = {
       ...data,
       id: healthId,
@@ -304,9 +383,42 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const deleteAllHealthLogs = async () => {
+    const toDeleteCount = healthLogs.length;
+    setHealthLogs([]);
+    localStorage.removeItem(cacheKey('health_logs'));
+
+    try {
+      const snap = await getDocs(collection(db, 'health_logs'));
+      const deletePromises: Promise<void>[] = [];
+      snap.forEach((d) => {
+        const docData = d.data();
+        const docEnv = docData.env || 'live';
+        if (docEnv === env) {
+          deletePromises.push(deleteDoc(d.ref));
+        }
+      });
+      await Promise.all(deletePromises);
+    } catch (e) {
+      console.warn('Error deleting all health logs from Firestore:', e);
+    }
+
+    if (currentUser) {
+      await logAuditEvent(
+        currentUser.email,
+        currentUser.fullName,
+        currentUser.role,
+        'DELETE_RECORD',
+        `Administrator executed DELETE ALL on Medical & Health Logs (${toDeleteCount} records erased) in ${env.toUpperCase()} database.`,
+        'HEALTH',
+        env
+      );
+    }
+  };
+
   // WIN-LOSS TOURNAMENT
   const saveWinLoss = async (data: Omit<WinLossRecord, 'id' | 'createdAt' | 'env'>, id?: string) => {
-    const recordId = id || 'wnl_' + Date.now();
+    const recordId = id || 'wnl_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
     const record: WinLossRecord = {
       ...data,
       id: recordId,
@@ -357,9 +469,42 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const deleteAllWinLossRecords = async () => {
+    const toDeleteCount = winLossRecords.length;
+    setWinLossRecords([]);
+    localStorage.removeItem(cacheKey('win_loss_records'));
+
+    try {
+      const snap = await getDocs(collection(db, 'win_loss_records'));
+      const deletePromises: Promise<void>[] = [];
+      snap.forEach((d) => {
+        const docData = d.data();
+        const docEnv = docData.env || 'live';
+        if (docEnv === env) {
+          deletePromises.push(deleteDoc(d.ref));
+        }
+      });
+      await Promise.all(deletePromises);
+    } catch (e) {
+      console.warn('Error deleting all win-loss records from Firestore:', e);
+    }
+
+    if (currentUser) {
+      await logAuditEvent(
+        currentUser.email,
+        currentUser.fullName,
+        currentUser.role,
+        'DELETE_RECORD',
+        `Administrator executed DELETE ALL on Tournament Match Records (${toDeleteCount} records erased) in ${env.toUpperCase()} database.`,
+        'WIN_LOSS',
+        env
+      );
+    }
+  };
+
   // TRAINING MONITORING (Cancel, Edit, Delete)
   const saveTraining = async (data: Omit<TrainingRecord, 'id' | 'createdAt' | 'env'>, id?: string) => {
-    const trainingId = id || 'trn_' + Date.now();
+    const trainingId = id || 'trn_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
     const record: TrainingRecord = {
       ...data,
       id: trainingId,
@@ -405,6 +550,39 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         currentUser.role,
         'DELETE_RECORD',
         `Permanently erased training log ID: ${id}`,
+        'TRAINING',
+        env
+      );
+    }
+  };
+
+  const deleteAllTrainingLogs = async () => {
+    const toDeleteCount = trainingLogs.length;
+    setTrainingLogs([]);
+    localStorage.removeItem(cacheKey('training_logs'));
+
+    try {
+      const snap = await getDocs(collection(db, 'training_logs'));
+      const deletePromises: Promise<void>[] = [];
+      snap.forEach((d) => {
+        const docData = d.data();
+        const docEnv = docData.env || 'live';
+        if (docEnv === env) {
+          deletePromises.push(deleteDoc(d.ref));
+        }
+      });
+      await Promise.all(deletePromises);
+    } catch (e) {
+      console.warn('Error deleting all training logs from Firestore:', e);
+    }
+
+    if (currentUser) {
+      await logAuditEvent(
+        currentUser.email,
+        currentUser.fullName,
+        currentUser.role,
+        'DELETE_RECORD',
+        `Administrator executed DELETE ALL on Training Logs (${toDeleteCount} sessions erased) in ${env.toUpperCase()} database.`,
         'TRAINING',
         env
       );
@@ -483,9 +661,42 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setMealLogs(prev => prev.filter(m => m.id !== id));
   };
 
+  const deleteAllMealLogs = async () => {
+    const toDeleteCount = mealLogs.length;
+    setMealLogs([]);
+    localStorage.removeItem(cacheKey('meal_logs'));
+
+    try {
+      const snap = await getDocs(collection(db, 'meal_logs'));
+      const deletePromises: Promise<void>[] = [];
+      snap.forEach((d) => {
+        const docData = d.data();
+        const docEnv = docData.env || 'live';
+        if (docEnv === env) {
+          deletePromises.push(deleteDoc(d.ref));
+        }
+      });
+      await Promise.all(deletePromises);
+    } catch (e) {
+      console.warn('Error deleting all meal records from Firestore:', e);
+    }
+
+    if (currentUser) {
+      await logAuditEvent(
+        currentUser.email,
+        currentUser.fullName,
+        currentUser.role,
+        'DELETE_RECORD',
+        `Administrator executed DELETE ALL on Meal Claiming Logs (${toDeleteCount} vouchers erased) in ${env.toUpperCase()} database.`,
+        'MEALS',
+        env
+      );
+    }
+  };
+
   // BROADCAST NOTIFICATION & PUSH ALERTS
   const broadcastNotification = async (title: string, message: string, priority: PushAlert['priority'] = 'normal') => {
-    const alertId = 'alert_' + Date.now();
+    const alertId = 'alert_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
     const alert: PushAlert = {
       id: alertId,
       title,
@@ -542,6 +753,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // PRACTICE DATABASE SEEDER (Only in Practice Mode)
   const seedPracticeData = async () => {
     if (env !== 'practice') return;
+
+    // First purge any existing practice data completely so multiple seedings/resets are always 100% clean
+    await clearPracticeData();
 
     // Realistic demo roster for Bais City
     const sampleMembers: Omit<DelegationMember, 'id' | 'createdAt' | 'env'>[] = [
@@ -619,6 +833,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const clearPracticeData = async () => {
     if (env !== 'practice') return;
+
+    // 1. Immediately wipe local state
     setMembers([]);
     setCheckins([]);
     setHealthLogs([]);
@@ -631,13 +847,32 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem(cacheKey('win_loss_records'));
     localStorage.removeItem(cacheKey('training_logs'));
     localStorage.removeItem(cacheKey('meal_logs'));
+
+    // 2. Query Firestore and physically delete all practice documents from cloud collections
+    const collectionsToPurge = ['members', 'checkins', 'health_logs', 'win_loss_records', 'training_logs', 'meal_logs'];
+    for (const col of collectionsToPurge) {
+      try {
+        const snap = await getDocs(collection(db, col));
+        const deletePromises: Promise<void>[] = [];
+        snap.forEach((d) => {
+          const docData = d.data();
+          if (docData.env === 'practice') {
+            deletePromises.push(deleteDoc(d.ref));
+          }
+        });
+        await Promise.all(deletePromises);
+      } catch (e) {
+        console.warn(`Could not purge practice docs from ${col}:`, e);
+      }
+    }
+
     if (currentUser) {
       await logAuditEvent(
         currentUser.email,
         currentUser.fullName,
         currentUser.role,
         'DELETE_RECORD',
-        'Cleared practice database dry-run information.',
+        'Cleared practice database dry-run records from cloud database and local cache.',
         'PRACTICE_DB',
         'practice'
       );
@@ -658,17 +893,23 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         syncStatus,
         saveMember,
         deleteMember,
+        deleteAllMembers,
         submitCheckIn,
         deleteCheckIn,
+        deleteAllCheckIns,
         logHealth,
         deleteHealthLog,
+        deleteAllHealthLogs,
         saveWinLoss,
         deleteWinLoss,
+        deleteAllWinLossRecords,
         saveTraining,
         deleteTraining,
+        deleteAllTrainingLogs,
         claimMeal,
         batchCreateMealsForDate,
         deleteMealRecord,
+        deleteAllMealLogs,
         broadcastNotification,
         markNotificationRead,
         seedPracticeData,

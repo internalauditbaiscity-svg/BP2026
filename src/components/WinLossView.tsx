@@ -15,13 +15,15 @@ import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { computeTournamentTally } from '../utils/pureLogic';
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
+import { AdminDeleteAllModal } from './AdminDeleteAllModal';
 import { SportType, WinLossRecord } from '../types';
 
 export const WinLossView: React.FC = () => {
-  const { winLossRecords, saveWinLoss, deleteWinLoss, members } = useData();
-  const { currentUser } = useAuth();
+  const { winLossRecords, saveWinLoss, deleteWinLoss, deleteAllWinLossRecords, members } = useData();
+  const { currentUser, isAdmin } = useAuth();
 
   const [showForm, setShowForm] = useState(false);
+  const [showDeleteAll, setShowDeleteAll] = useState(false);
   const [date, setDate] = useState('2026-12-11');
   const [sport, setSport] = useState<SportType>('Arnis');
   const [athleteOrTeam, setAthleteOrTeam] = useState('');
@@ -111,13 +113,27 @@ export const WinLossView: React.FC = () => {
           </p>
         </div>
 
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="px-4 py-2.5 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 shrink-0"
-        >
-          {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-          {showForm ? 'Close Entry Form' : 'Record New Match Result'}
-        </button>
+        <div className="flex items-center gap-2">
+          {isAdmin && winLossRecords.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowDeleteAll(true)}
+              className="px-3.5 py-2.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-800 font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 shrink-0"
+              title="Delete all match records (Admin only)"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+              <span>Delete All</span>
+            </button>
+          )}
+
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="px-4 py-2.5 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 shrink-0"
+          >
+            {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+            {showForm ? 'Close Entry Form' : 'Record New Match Result'}
+          </button>
+        </div>
       </div>
 
       {/* Official Medal & Standing Board */}
@@ -466,6 +482,15 @@ export const WinLossView: React.FC = () => {
         itemName={deleteTarget?.desc || 'Match'}
         onConfirm={confirmDelete}
         onCancel={() => setDeleteTarget(null)}
+      />
+
+      {/* Admin Security Purge Modal */}
+      <AdminDeleteAllModal
+        isOpen={showDeleteAll}
+        moduleTitle="Tournament Match Records"
+        itemCount={winLossRecords.length}
+        onConfirm={deleteAllWinLossRecords}
+        onClose={() => setShowDeleteAll(false)}
       />
 
     </div>

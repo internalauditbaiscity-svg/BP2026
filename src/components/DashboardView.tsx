@@ -244,8 +244,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               </div>
             ) : (
               <div className="space-y-3">
-                {recentCheckins.map((chk) => (
-                  <div key={chk.id} className="p-3.5 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                {recentCheckins.map((chk, idx) => (
+                  <div key={`${chk.id}-${idx}`} className="p-3.5 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-sm text-slate-900 dark:text-white">{chk.location}</span>

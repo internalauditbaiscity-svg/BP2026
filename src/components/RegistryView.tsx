@@ -18,14 +18,16 @@ import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { searchMembers } from '../utils/pureLogic';
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
+import { AdminDeleteAllModal } from './AdminDeleteAllModal';
 import { DelegationMember, SportType } from '../types';
 
 export const RegistryView: React.FC = () => {
-  const { members, saveMember, deleteMember } = useData();
+  const { members, saveMember, deleteMember, deleteAllMembers } = useData();
   const { currentUser, isAdmin } = useAuth();
 
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [showDeleteAll, setShowDeleteAll] = useState(false);
 
   // Form Fields
   const [fullName, setFullName] = useState('');
@@ -135,13 +137,27 @@ export const RegistryView: React.FC = () => {
           </p>
         </div>
 
-        <button
-          onClick={showForm ? handleCancel : handleOpenCreate}
-          className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 shrink-0"
-        >
-          {showForm ? <X className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
-          {showForm ? 'Cancel Entry' : 'Register New Member'}
-        </button>
+        <div className="flex items-center gap-2">
+          {isAdmin && members.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowDeleteAll(true)}
+              className="px-3.5 py-2.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-800 font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 shrink-0"
+              title="Delete all members (Admin only)"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+              <span>Delete All</span>
+            </button>
+          )}
+
+          <button
+            onClick={showForm ? handleCancel : handleOpenCreate}
+            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 shrink-0"
+          >
+            {showForm ? <X className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
+            {showForm ? 'Cancel Entry' : 'Register New Member'}
+          </button>
+        </div>
       </div>
 
       {/* Add / Edit Form */}
@@ -469,6 +485,15 @@ export const RegistryView: React.FC = () => {
         itemName={deleteTarget?.name || 'Member'}
         onConfirm={confirmDelete}
         onCancel={() => setDeleteTarget(null)}
+      />
+
+      {/* Admin Security Purge Modal */}
+      <AdminDeleteAllModal
+        isOpen={showDeleteAll}
+        moduleTitle="Delegation Members Registry"
+        itemCount={members.length}
+        onConfirm={deleteAllMembers}
+        onClose={() => setShowDeleteAll(false)}
       />
 
     </div>

@@ -19,14 +19,16 @@ import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { calculateDurationMinutes, computeTrainingSummary } from '../utils/pureLogic';
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
+import { AdminDeleteAllModal } from './AdminDeleteAllModal';
 import { SportType, TrainingRecord } from '../types';
 
 export const TrainingView: React.FC = () => {
-  const { members, trainingLogs, saveTraining, deleteTraining } = useData();
-  const { currentUser } = useAuth();
+  const { members, trainingLogs, saveTraining, deleteTraining, deleteAllTrainingLogs } = useData();
+  const { currentUser, isAdmin } = useAuth();
 
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [showDeleteAll, setShowDeleteAll] = useState(false);
 
   // Form Fields
   const [date, setDate] = useState('2026-12-10');
@@ -157,13 +159,27 @@ export const TrainingView: React.FC = () => {
           </p>
         </div>
 
-        <button
-          onClick={showForm ? handleCancel : handleOpenCreate}
-          className="px-4 py-2.5 bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 shrink-0"
-        >
-          {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-          {showForm ? 'Cancel Entry' : 'Log New Training Session'}
-        </button>
+        <div className="flex items-center gap-2">
+          {isAdmin && trainingLogs.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowDeleteAll(true)}
+              className="px-3.5 py-2.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-800 font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 shrink-0"
+              title="Delete all training sessions (Admin only)"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+              <span>Delete All</span>
+            </button>
+          )}
+
+          <button
+            onClick={showForm ? handleCancel : handleOpenCreate}
+            className="px-4 py-2.5 bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 shrink-0"
+          >
+            {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+            {showForm ? 'Cancel Entry' : 'Log New Training Session'}
+          </button>
+        </div>
       </div>
 
       {/* Summary KPI Cards */}
@@ -557,6 +573,15 @@ export const TrainingView: React.FC = () => {
         itemName={deleteTarget?.desc || 'Training Session'}
         onConfirm={confirmDelete}
         onCancel={() => setDeleteTarget(null)}
+      />
+
+      {/* Admin Security Purge Modal */}
+      <AdminDeleteAllModal
+        isOpen={showDeleteAll}
+        moduleTitle="Training Sessions"
+        itemCount={trainingLogs.length}
+        onConfirm={deleteAllTrainingLogs}
+        onClose={() => setShowDeleteAll(false)}
       />
 
     </div>
