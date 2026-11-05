@@ -11,14 +11,26 @@ import {
   KeyRound, 
   Pencil, 
   Mail, 
-  Award 
+  Award,
+  Printer,
+  Download
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
 import { UserRole, SportType, AppUserRecord } from '../types';
 
 export const UserMaintenanceView: React.FC = () => {
-  const { currentUser, isAdmin, appUsers, addUser, deleteUser, updateUserRole } = useAuth();
+  const { 
+    currentUser, 
+    isAdmin, 
+    appUsers, 
+    addUser, 
+    deleteUser, 
+    updateUserRole, 
+    toggleUserDeletePermission,
+    toggleUserPrintPermission,
+    toggleUserCsvPermission
+  } = useAuth();
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [email, setEmail] = useState('');
@@ -26,12 +38,18 @@ export const UserMaintenanceView: React.FC = () => {
   const [role, setRole] = useState<UserRole>('Coach');
   const [sport, setSport] = useState<SportType>('Arnis');
   const [status, setStatus] = useState<AppUserRecord['status']>('Active');
+  const [canDeleteAllowed, setCanDeleteAllowed] = useState(true);
+  const [canPrintAllowed, setCanPrintAllowed] = useState(true);
+  const [canExportCsvAllowed, setCanExportCsvAllowed] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Edit role modal state
   const [editingUser, setEditingUser] = useState<AppUserRecord | null>(null);
   const [editRole, setEditRole] = useState<UserRole>('Coach');
   const [editSport, setEditSport] = useState<SportType>('General');
+  const [editCanDelete, setEditCanDelete] = useState(true);
+  const [editCanPrint, setEditCanPrint] = useState(true);
+  const [editCanExportCsv, setEditCanExportCsv] = useState(true);
 
   // Delete modal
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
@@ -66,11 +84,17 @@ export const UserMaintenanceView: React.FC = () => {
         role,
         sport,
         status,
+        canDelete: canDeleteAllowed,
+        canPrint: canPrintAllowed,
+        canExportCsv: canExportCsvAllowed,
       });
 
       setShowAddForm(false);
       setEmail('');
       setFullName('');
+      setCanDeleteAllowed(true);
+      setCanPrintAllowed(true);
+      setCanExportCsvAllowed(true);
     } catch (err) {
       console.error(err);
     } finally {
@@ -82,11 +106,19 @@ export const UserMaintenanceView: React.FC = () => {
     setEditingUser(u);
     setEditRole(u.role);
     setEditSport(u.sport || 'General');
+    setEditCanDelete(u.canDelete !== false);
+    setEditCanPrint(u.canPrint !== false);
+    setEditCanExportCsv(u.canExportCsv !== false);
   };
 
   const handleSaveEditRole = async () => {
     if (!editingUser) return;
     await updateUserRole(editingUser.id, editRole, editSport);
+    if (editingUser.role !== 'Administrator') {
+      await toggleUserDeletePermission(editingUser.id, editCanDelete);
+      await toggleUserPrintPermission(editingUser.id, editCanPrint);
+      await toggleUserCsvPermission(editingUser.id, editCanExportCsv);
+    }
     setEditingUser(null);
   };
 
@@ -272,6 +304,53 @@ export const UserMaintenanceView: React.FC = () => {
             </div>
           </div>
 
+          {/* User Feature Permissions */}
+          <div className="pt-3 border-t border-slate-200 dark:border-slate-800 space-y-2">
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
+              Feature & Command Permissions
+            </span>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <label className="flex items-center gap-2 cursor-pointer p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60">
+                <input
+                  type="checkbox"
+                  checked={canDeleteAllowed}
+                  onChange={(e) => setCanDeleteAllowed(e.target.checked)}
+                  className="w-4 h-4 text-emerald-600 rounded-sm"
+                />
+                <div className="text-xs">
+                  <span className="font-bold text-slate-800 dark:text-slate-200 block">Record Deletions</span>
+                  <span className="text-[10px] text-slate-500">Allow delete in all modules</span>
+                </div>
+              </label>
+
+              <label className="flex items-center gap-2 cursor-pointer p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60">
+                <input
+                  type="checkbox"
+                  checked={canPrintAllowed}
+                  onChange={(e) => setCanPrintAllowed(e.target.checked)}
+                  className="w-4 h-4 text-emerald-600 rounded-sm"
+                />
+                <div className="text-xs">
+                  <span className="font-bold text-slate-800 dark:text-slate-200 block">Print Reports</span>
+                  <span className="text-[10px] text-slate-500">Preview modal print</span>
+                </div>
+              </label>
+
+              <label className="flex items-center gap-2 cursor-pointer p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60">
+                <input
+                  type="checkbox"
+                  checked={canExportCsvAllowed}
+                  onChange={(e) => setCanExportCsvAllowed(e.target.checked)}
+                  className="w-4 h-4 text-emerald-600 rounded-sm"
+                />
+                <div className="text-xs">
+                  <span className="font-bold text-slate-800 dark:text-slate-200 block">Export to CSV</span>
+                  <span className="text-[10px] text-slate-500">Preview modal export</span>
+                </div>
+              </label>
+            </div>
+          </div>
+
           <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-800">
             <button
               type="button"
@@ -307,12 +386,15 @@ export const UserMaintenanceView: React.FC = () => {
           <table className="w-full text-left text-xs text-slate-600 dark:text-slate-300">
             <thead className="bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-200 font-bold uppercase text-[10px] tracking-wider">
               <tr>
-                <th className="py-3 px-4">User Details</th>
-                <th className="py-3 px-4">Role</th>
-                <th className="py-3 px-4">Sport</th>
-                <th className="py-3 px-4">Status</th>
-                <th className="py-3 px-4">Created</th>
-                <th className="py-3 px-4 text-right">Actions</th>
+                <th className="py-3 px-3">User Details</th>
+                <th className="py-3 px-2.5">Role</th>
+                <th className="py-3 px-2.5">Sport</th>
+                <th className="py-3 px-2.5">Delete Rights</th>
+                <th className="py-3 px-2.5">Print Report</th>
+                <th className="py-3 px-2.5">Export CSV</th>
+                <th className="py-3 px-2.5">Status</th>
+                <th className="py-3 px-2.5">Created</th>
+                <th className="py-3 px-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
@@ -320,7 +402,7 @@ export const UserMaintenanceView: React.FC = () => {
                 const isCurrent = currentUser?.email.toLowerCase() === u.email.toLowerCase();
                 return (
                   <tr key={u.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
-                    <td className="py-3 px-4">
+                    <td className="py-3 px-3">
                       <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
                         {u.fullName}
                         {isCurrent && (
@@ -331,7 +413,7 @@ export const UserMaintenanceView: React.FC = () => {
                       </div>
                       <div className="text-[11px] text-slate-400 font-mono">{u.email}</div>
                     </td>
-                    <td className="py-3 px-4">
+                    <td className="py-3 px-2.5">
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                         u.role === 'Administrator' 
                           ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300' 
@@ -344,17 +426,107 @@ export const UserMaintenanceView: React.FC = () => {
                         {u.role}
                       </span>
                     </td>
-                    <td className="py-3 px-4">
+                    <td className="py-3 px-2.5">
                       <span className="font-semibold text-slate-700 dark:text-slate-300">{u.sport || 'General'}</span>
                     </td>
-                    <td className="py-3 px-4">
+                    <td className="py-3 px-2.5">
+                      {u.role === 'Administrator' ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-lg border border-emerald-200 dark:border-emerald-800">
+                          <Check className="w-3 h-3" /> Admin Protected
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => toggleUserDeletePermission(u.id, u.canDelete === false ? true : false)}
+                          className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 border shadow-2xs ${
+                            u.canDelete !== false
+                              ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800 hover:bg-emerald-100'
+                              : 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-800 hover:bg-rose-100'
+                          }`}
+                          title="Click to toggle delete permission for this user"
+                        >
+                          {u.canDelete !== false ? (
+                            <>
+                              <Check className="w-3 h-3 text-emerald-600" />
+                              <span>Allowed</span>
+                            </>
+                          ) : (
+                            <>
+                              <X className="w-3 h-3 text-rose-600" />
+                              <span>Disabled</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </td>
+                    <td className="py-3 px-2.5">
+                      {u.role === 'Administrator' ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-lg border border-emerald-200 dark:border-emerald-800">
+                          <Check className="w-3 h-3" /> Admin Protected
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => toggleUserPrintPermission(u.id, u.canPrint === false ? true : false)}
+                          className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 border shadow-2xs ${
+                            u.canPrint !== false
+                              ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800 hover:bg-emerald-100'
+                              : 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-800 hover:bg-rose-100'
+                          }`}
+                          title="Click to toggle Print Report permission in preview modal for this user"
+                        >
+                          {u.canPrint !== false ? (
+                            <>
+                              <Check className="w-3 h-3 text-emerald-600" />
+                              <span>Allowed</span>
+                            </>
+                          ) : (
+                            <>
+                              <X className="w-3 h-3 text-rose-600" />
+                              <span>Disabled</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </td>
+                    <td className="py-3 px-2.5">
+                      {u.role === 'Administrator' ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-lg border border-emerald-200 dark:border-emerald-800">
+                          <Check className="w-3 h-3" /> Admin Protected
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => toggleUserCsvPermission(u.id, u.canExportCsv === false ? true : false)}
+                          className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 border shadow-2xs ${
+                            u.canExportCsv !== false
+                              ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800 hover:bg-emerald-100'
+                              : 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-800 hover:bg-rose-100'
+                          }`}
+                          title="Click to toggle Export to CSV permission in preview modal for this user"
+                        >
+                          {u.canExportCsv !== false ? (
+                            <>
+                              <Check className="w-3 h-3 text-emerald-600" />
+                              <span>Allowed</span>
+                            </>
+                          ) : (
+                            <>
+                              <X className="w-3 h-3 text-rose-600" />
+                              <span>Disabled</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </td>
+                    <td className="py-3 px-2.5">
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                         u.status === 'Active' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
                       }`}>
                         {u.status}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-slate-500 font-mono text-[11px]">
+                    <td className="py-3 px-2.5 text-slate-500 font-mono text-[11px]">
                       {u.createdAt}
                     </td>
                     <td className="py-3 px-4 text-right">
@@ -434,6 +606,53 @@ export const UserMaintenanceView: React.FC = () => {
                 <option value="Table Tennis">Table Tennis</option>
               </select>
             </div>
+
+            {editingUser.role !== 'Administrator' && (
+              <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-2">
+                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
+                  User Command Permissions
+                </span>
+
+                <label className="flex items-center gap-2 cursor-pointer p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60">
+                  <input
+                    type="checkbox"
+                    checked={editCanDelete}
+                    onChange={(e) => setEditCanDelete(e.target.checked)}
+                    className="w-4 h-4 text-emerald-600 rounded-sm"
+                  />
+                  <div className="text-xs">
+                    <span className="font-bold text-slate-900 dark:text-white block">Allow Record Deletions</span>
+                    <span className="text-slate-500 text-[11px]">Allow erasing records in modules.</span>
+                  </div>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60">
+                  <input
+                    type="checkbox"
+                    checked={editCanPrint}
+                    onChange={(e) => setEditCanPrint(e.target.checked)}
+                    className="w-4 h-4 text-emerald-600 rounded-sm"
+                  />
+                  <div className="text-xs">
+                    <span className="font-bold text-slate-900 dark:text-white block">Allow Print Reports</span>
+                    <span className="text-slate-500 text-[11px]">Display Print button in preview modal.</span>
+                  </div>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60">
+                  <input
+                    type="checkbox"
+                    checked={editCanExportCsv}
+                    onChange={(e) => setEditCanExportCsv(e.target.checked)}
+                    className="w-4 h-4 text-emerald-600 rounded-sm"
+                  />
+                  <div className="text-xs">
+                    <span className="font-bold text-slate-900 dark:text-white block">Allow Export to CSV</span>
+                    <span className="text-slate-500 text-[11px]">Display Export CSV button in preview modal.</span>
+                  </div>
+                </label>
+              </div>
+            )}
 
             <div className="flex items-center justify-end gap-2 pt-2">
               <button

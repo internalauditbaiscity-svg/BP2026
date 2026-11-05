@@ -9,21 +9,24 @@ import {
   Calendar, 
   Swords, 
   Check, 
-  X 
+  X,
+  Table
 } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { computeTournamentTally } from '../utils/pureLogic';
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
 import { AdminDeleteAllModal } from './AdminDeleteAllModal';
+import { PreviewListModal, PreviewColumn } from './PreviewListModal';
 import { SportType, WinLossRecord } from '../types';
 
 export const WinLossView: React.FC = () => {
   const { winLossRecords, saveWinLoss, deleteWinLoss, deleteAllWinLossRecords, members } = useData();
-  const { currentUser, isAdmin } = useAuth();
+  const { currentUser, isAdmin, canDelete } = useAuth();
 
   const [showForm, setShowForm] = useState(false);
   const [showDeleteAll, setShowDeleteAll] = useState(false);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [date, setDate] = useState('2026-12-11');
   const [sport, setSport] = useState<SportType>('Arnis');
   const [athleteOrTeam, setAthleteOrTeam] = useState('');
@@ -96,6 +99,17 @@ export const WinLossView: React.FC = () => {
     return true;
   });
 
+  const previewColumns: PreviewColumn<WinLossRecord>[] = [
+    { header: 'Date', accessor: (w) => w.date, className: 'font-mono text-xs' },
+    { header: 'Sport', accessor: (w) => w.sport, className: 'font-semibold text-amber-600 dark:text-amber-400' },
+    { header: 'Athlete / Team (Bais)', accessor: (w) => w.athleteOrTeam, className: 'font-bold text-slate-900 dark:text-white' },
+    { header: 'Opponent', accessor: (w) => w.opponent },
+    { header: 'Round / Stage', accessor: (w) => w.roundStage },
+    { header: 'Final Score', accessor: (w) => w.score, className: 'font-mono font-bold' },
+    { header: 'Match Result', accessor: (w) => w.result.toUpperCase() },
+    { header: 'Remarks', accessor: (w) => w.remarks || '-' },
+  ];
+
   return (
     <div className="space-y-6 pb-20 lg:pb-8">
       
@@ -113,7 +127,18 @@ export const WinLossView: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Preview List Command Button */}
+          <button
+            type="button"
+            onClick={() => setShowPreviewModal(true)}
+            className="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 shrink-0 border border-slate-300 dark:border-slate-700"
+            title="View display-only printable tabular report"
+          >
+            <Table className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+            <span>Preview List</span>
+          </button>
+
           {isAdmin && winLossRecords.length > 0 && (
             <button
               type="button"
@@ -453,14 +478,16 @@ export const WinLossView: React.FC = () => {
                       <div className="text-[11px] text-slate-500">Logged by {r.loggedBy}</div>
                     </div>
 
-                    <button
-                      onClick={() => setDeleteTarget({ id: r.id, desc: `${r.athleteOrTeam} vs ${r.opponent}` })}
-                      className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 rounded-lg transition-colors"
-                      title="Delete Match Record"
-                      aria-label={`Delete match ${r.athleteOrTeam} vs ${r.opponent}`}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {canDelete && (
+                      <button
+                        onClick={() => setDeleteTarget({ id: r.id, desc: `${r.athleteOrTeam} vs ${r.opponent}` })}
+                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 rounded-lg transition-colors"
+                        title="Delete Match Record"
+                        aria-label={`Delete match ${r.athleteOrTeam} vs ${r.opponent}`}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -491,6 +518,17 @@ export const WinLossView: React.FC = () => {
         itemCount={winLossRecords.length}
         onConfirm={deleteAllWinLossRecords}
         onClose={() => setShowDeleteAll(false)}
+      />
+
+      {/* Preview Tabular Report Modal */}
+      <PreviewListModal
+        isOpen={showPreviewModal}
+        onClose={() => setShowPreviewModal(false)}
+        moduleTitle="Daily Tournament Standings & Match Results"
+        data={winLossRecords}
+        columns={previewColumns}
+        getItemSport={(w) => w.sport}
+        getItemId={(w) => w.id}
       />
 
     </div>

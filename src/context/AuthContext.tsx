@@ -12,6 +12,9 @@ export interface AuthUser {
   role: UserRole;
   sport?: SportType;
   authProvider: 'google' | 'credentials';
+  canDelete?: boolean;
+  canPrint?: boolean;
+  canExportCsv?: boolean;
 }
 
 interface AuthContextType {
@@ -21,9 +24,15 @@ interface AuthContextType {
   loginWithCredentials: (emailOrUser: string, pin: string) => Promise<boolean>;
   logout: () => Promise<void>;
   isAdmin: boolean;
+  canDelete: boolean;
+  canPrint: boolean;
+  canExportCsv: boolean;
   appUsers: AppUserRecord[];
   refreshUsers: () => Promise<void>;
   updateUserRole: (userId: string, newRole: UserRole, sport?: SportType) => Promise<void>;
+  toggleUserDeletePermission: (userId: string, canDelete: boolean) => Promise<void>;
+  toggleUserPrintPermission: (userId: string, canPrint: boolean) => Promise<void>;
+  toggleUserCsvPermission: (userId: string, canExportCsv: boolean) => Promise<void>;
   addUser: (userData: Omit<AppUserRecord, 'id' | 'createdAt'>) => Promise<void>;
   deleteUser: (userId: string) => Promise<void>;
 }
@@ -36,6 +45,9 @@ const DEFAULT_USERS: AppUserRecord[] = [
     role: 'Administrator',
     sport: 'General',
     status: 'Active',
+    canDelete: true,
+    canPrint: true,
+    canExportCsv: true,
     createdAt: '2026-10-01',
   },
   {
@@ -45,6 +57,9 @@ const DEFAULT_USERS: AppUserRecord[] = [
     role: 'Coach',
     sport: 'Arnis',
     status: 'Active',
+    canDelete: true,
+    canPrint: true,
+    canExportCsv: true,
     createdAt: '2026-10-01',
   },
   {
@@ -54,6 +69,9 @@ const DEFAULT_USERS: AppUserRecord[] = [
     role: 'Chaperone',
     sport: 'General',
     status: 'Active',
+    canDelete: true,
+    canPrint: true,
+    canExportCsv: true,
     createdAt: '2026-10-01',
   },
   {
@@ -63,6 +81,9 @@ const DEFAULT_USERS: AppUserRecord[] = [
     role: 'Medical Staff',
     sport: 'General',
     status: 'Active',
+    canDelete: true,
+    canPrint: true,
+    canExportCsv: true,
     createdAt: '2026-10-01',
   },
   {
@@ -72,6 +93,9 @@ const DEFAULT_USERS: AppUserRecord[] = [
     role: 'Delegation Official',
     sport: 'General',
     status: 'Active',
+    canDelete: true,
+    canPrint: true,
+    canExportCsv: true,
     createdAt: '2026-10-01',
   },
 ];
@@ -130,6 +154,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         role,
         sport,
         authProvider: 'google',
+        canDelete: isSuper ? true : (existing?.canDelete ?? true),
+        canPrint: isSuper ? true : (existing?.canPrint ?? true),
+        canExportCsv: isSuper ? true : (existing?.canExportCsv ?? true),
       };
 
       setCurrentUser(authUser);
@@ -163,6 +190,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             role: found.role,
             sport: found.sport || 'General',
             authProvider: 'credentials',
+            canDelete: found.role === 'Administrator' ? true : (found.canDelete ?? true),
+            canPrint: found.role === 'Administrator' ? true : (found.canPrint ?? true),
+            canExportCsv: found.role === 'Administrator' ? true : (found.canExportCsv ?? true),
           };
           setCurrentUser(authUser);
           localStorage.setItem('bais_auth_user', JSON.stringify(authUser));
@@ -272,7 +302,96 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const toggleUserDeletePermission = async (userId: string, allowDelete: boolean) => {
+    const target = appUsers.find(u => u.id === userId);
+    try {
+      await setDoc(doc(db, 'app_users', userId), { canDelete: allowDelete }, { merge: true });
+    } catch (e) {
+      console.warn('Could not update user delete permission in Firestore:', e);
+    }
+    setAppUsers(prev => prev.map(u => u.id === userId ? { ...u, canDelete: allowDelete } : u));
+    
+    // If updating currently logged in user, update session
+    if (currentUser?.id === userId) {
+      const updatedUser: AuthUser = { ...currentUser, canDelete: allowDelete };
+      setCurrentUser(updatedUser);
+      localStorage.setItem('bais_auth_user', JSON.stringify(updatedUser));
+    }
+
+    if (currentUser && target) {
+      await logAuditEvent(
+        currentUser.email,
+        currentUser.fullName,
+        currentUser.role,
+        'USER_MANAGEMENT',
+        `${allowDelete ? 'Enabled' : 'Disabled'} delete permissions for user ${target.fullName} (${target.email})`,
+        'USER_MAINTENANCE',
+        'live'
+      );
+    }
+  };
+
+  const toggleUserPrintPermission = async (userId: string, allowPrint: boolean) => {
+    const target = appUsers.find(u => u.id === userId);
+    try {
+      await setDoc(doc(db, 'app_users', userId), { canPrint: allowPrint }, { merge: true });
+    } catch (e) {
+      console.warn('Could not update user print permission in Firestore:', e);
+    }
+    setAppUsers(prev => prev.map(u => u.id === userId ? { ...u, canPrint: allowPrint } : u));
+    
+    if (currentUser?.id === userId) {
+      const updatedUser: AuthUser = { ...currentUser, canPrint: allowPrint };
+      setCurrentUser(updatedUser);
+      localStorage.setItem('bais_auth_user', JSON.stringify(updatedUser));
+    }
+
+    if (currentUser && target) {
+      await logAuditEvent(
+        currentUser.email,
+        currentUser.fullName,
+        currentUser.role,
+        'USER_MANAGEMENT',
+        `${allowPrint ? 'Enabled' : 'Disabled'} Print Report permission for user ${target.fullName} (${target.email})`,
+        'USER_MAINTENANCE',
+        'live'
+      );
+    }
+  };
+
+  const toggleUserCsvPermission = async (userId: string, allowCsv: boolean) => {
+    const target = appUsers.find(u => u.id === userId);
+    try {
+      await setDoc(doc(db, 'app_users', userId), { canExportCsv: allowCsv }, { merge: true });
+    } catch (e) {
+      console.warn('Could not update user CSV export permission in Firestore:', e);
+    }
+    setAppUsers(prev => prev.map(u => u.id === userId ? { ...u, canExportCsv: allowCsv } : u));
+    
+    if (currentUser?.id === userId) {
+      const updatedUser: AuthUser = { ...currentUser, canExportCsv: allowCsv };
+      setCurrentUser(updatedUser);
+      localStorage.setItem('bais_auth_user', JSON.stringify(updatedUser));
+    }
+
+    if (currentUser && target) {
+      await logAuditEvent(
+        currentUser.email,
+        currentUser.fullName,
+        currentUser.role,
+        'USER_MANAGEMENT',
+        `${allowCsv ? 'Enabled' : 'Disabled'} Export to CSV permission for user ${target.fullName} (${target.email})`,
+        'USER_MAINTENANCE',
+        'live'
+      );
+    }
+  };
+
   const isAdmin = currentUser?.role === 'Administrator' || currentUser?.email === 'internalaudit.baiscity@gmail.com';
+  // Admin always has full capabilities; otherwise respect user permissions (defaults to true)
+  const canDelete = isAdmin || (currentUser?.canDelete !== false);
+  const canPrint = isAdmin || (currentUser?.canPrint !== false);
+  const canExportCsv = isAdmin || (currentUser?.canExportCsv !== false);
 
   return (
     <AuthContext.Provider
@@ -283,9 +402,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loginWithCredentials,
         logout,
         isAdmin,
+        canDelete,
+        canPrint,
+        canExportCsv,
         appUsers,
         refreshUsers,
         updateUserRole,
+        toggleUserDeletePermission,
+        toggleUserPrintPermission,
+        toggleUserCsvPermission,
         addUser,
         deleteUser,
       }}

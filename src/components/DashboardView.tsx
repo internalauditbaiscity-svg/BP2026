@@ -95,20 +95,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               <FlaskConical className="w-4 h-4" />
               <span>Practice Database Testing Mode (Clean buildup data is protected in LIVE)</span>
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={seedPracticeData}
-                className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg transition-colors flex items-center gap-1.5"
-              >
-                <Plus className="w-3.5 h-3.5" /> Load Practice Rehearsal Data
-              </button>
-              <button
-                onClick={clearPracticeData}
-                className="px-3 py-1.5 bg-red-950/80 hover:bg-red-900 border border-red-700/60 text-red-200 font-bold rounded-lg transition-colors flex items-center gap-1.5"
-              >
-                <Trash2 className="w-3.5 h-3.5" /> Reset Practice DB
-              </button>
-            </div>
+            {isAdmin && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={clearPracticeData}
+                  className="px-3.5 py-1.5 bg-red-950/80 hover:bg-red-900 border border-red-700/60 text-red-200 font-bold rounded-lg transition-colors flex items-center gap-1.5 shadow-2xs"
+                  title="Reset practice database (Administrator only)"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> Reset Practice DB
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

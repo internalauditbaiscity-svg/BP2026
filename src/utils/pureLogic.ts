@@ -73,19 +73,23 @@ export function computeMealStats(meals: MealRecord[], targetRole?: string) {
 
   const byType: Record<string, { total: number; claimed: number; pending: number }> = {
     Breakfast: { total: 0, claimed: 0, pending: 0 },
+    'AM Snack': { total: 0, claimed: 0, pending: 0 },
     Lunch: { total: 0, claimed: 0, pending: 0 },
-    Dinner: { total: 0, claimed: 0, pending: 0 },
     'PM Snack': { total: 0, claimed: 0, pending: 0 },
+    Dinner: { total: 0, claimed: 0, pending: 0 },
+    'Sports Drink': { total: 0, claimed: 0, pending: 0 },
+    Vitamins: { total: 0, claimed: 0, pending: 0 },
   };
 
   for (const m of filtered) {
-    if (byType[m.mealType]) {
-      byType[m.mealType].total++;
-      if (m.claimed) {
-        byType[m.mealType].claimed++;
-      } else {
-        byType[m.mealType].pending++;
-      }
+    if (!byType[m.mealType]) {
+      byType[m.mealType] = { total: 0, claimed: 0, pending: 0 };
+    }
+    byType[m.mealType].total++;
+    if (m.claimed) {
+      byType[m.mealType].claimed++;
+    } else {
+      byType[m.mealType].pending++;
     }
   }
 

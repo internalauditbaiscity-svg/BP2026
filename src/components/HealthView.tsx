@@ -10,20 +10,23 @@ import {
   Filter, 
   ShieldAlert, 
   Activity, 
-  X 
+  X,
+  Table
 } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
 import { AdminDeleteAllModal } from './AdminDeleteAllModal';
+import { PreviewListModal, PreviewColumn } from './PreviewListModal';
 import { HealthRecord, SportType } from '../types';
 
 export const HealthView: React.FC = () => {
   const { members, healthLogs, logHealth, deleteHealthLog, deleteAllHealthLogs } = useData();
-  const { currentUser, isAdmin } = useAuth();
+  const { currentUser, isAdmin, canDelete } = useAuth();
 
   const [showForm, setShowForm] = useState(false);
   const [showDeleteAll, setShowDeleteAll] = useState(false);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [memberId, setMemberId] = useState('');
   const [date, setDate] = useState('2026-12-10');
   const [time, setTime] = useState('08:00');
@@ -106,6 +109,17 @@ export const HealthView: React.FC = () => {
     return true;
   });
 
+  const previewColumns: PreviewColumn<HealthRecord>[] = [
+    { header: 'Date & Time', accessor: (h) => `${h.date} ${h.time}`, className: 'font-mono text-xs' },
+    { header: 'Member Name', accessor: (h) => h.memberName, className: 'font-bold text-slate-900 dark:text-white' },
+    { header: 'Sport', accessor: (h) => h.sport, className: 'font-semibold' },
+    { header: 'Temperature', accessor: (h) => `${h.temperature}°C`, className: 'font-mono font-bold' },
+    { header: 'Readiness Status', accessor: (h) => h.clearedToPlay ? 'Cleared' : 'MEDICAL HOLD' },
+    { header: 'Injury Details', accessor: (h) => h.hasInjury ? `${h.injuryType} (${h.severity}) - ${h.bodyPart}` : 'None' },
+    { header: 'Logged By', accessor: (h) => h.loggedBy },
+    { header: 'Clinical Notes', accessor: (h) => h.notes || '-' },
+  ];
+
   return (
     <div className="space-y-6 pb-20 lg:pb-8">
       
@@ -123,7 +137,18 @@ export const HealthView: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Preview List Command Button */}
+          <button
+            type="button"
+            onClick={() => setShowPreviewModal(true)}
+            className="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 shrink-0 border border-slate-300 dark:border-slate-700"
+            title="View display-only printable tabular report"
+          >
+            <Table className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+            <span>Preview List</span>
+          </button>
+
           {isAdmin && healthLogs.length > 0 && (
             <button
               type="button"
@@ -455,14 +480,16 @@ export const HealthView: React.FC = () => {
                     <div className="text-[11px] text-slate-500">Logged by {log.loggedBy}</div>
                   </div>
 
-                  <button
-                    onClick={() => setDeleteTarget({ id: log.id, desc: `Health record for ${log.memberName}` })}
-                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 rounded-lg transition-colors"
-                    title="Delete Health Record"
-                    aria-label={`Delete health record for ${log.memberName}`}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  {canDelete && (
+                    <button
+                      onClick={() => setDeleteTarget({ id: log.id, desc: `Health record for ${log.memberName}` })}
+                      className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 rounded-lg transition-colors"
+                      title="Delete Health Record"
+                      aria-label={`Delete health record for ${log.memberName}`}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -492,6 +519,17 @@ export const HealthView: React.FC = () => {
         itemCount={healthLogs.length}
         onConfirm={deleteAllHealthLogs}
         onClose={() => setShowDeleteAll(false)}
+      />
+
+      {/* Preview Tabular Report Modal */}
+      <PreviewListModal
+        isOpen={showPreviewModal}
+        onClose={() => setShowPreviewModal(false)}
+        moduleTitle="Medical & Temperature Monitoring"
+        data={healthLogs}
+        columns={previewColumns}
+        getItemSport={(h) => h.sport}
+        getItemId={(h) => h.id}
       />
 
     </div>

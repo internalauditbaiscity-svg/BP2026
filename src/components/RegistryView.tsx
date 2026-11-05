@@ -12,22 +12,28 @@ import {
   Phone, 
   Building, 
   IdCard, 
-  AlertCircle 
+  AlertCircle,
+  Upload,
+  Table
 } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { searchMembers } from '../utils/pureLogic';
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
 import { AdminDeleteAllModal } from './AdminDeleteAllModal';
+import { CsvUploadModal } from './CsvUploadModal';
+import { PreviewListModal, PreviewColumn } from './PreviewListModal';
 import { DelegationMember, SportType } from '../types';
 
 export const RegistryView: React.FC = () => {
-  const { members, saveMember, deleteMember, deleteAllMembers } = useData();
-  const { currentUser, isAdmin } = useAuth();
+  const { members, saveMember, batchAddMembers, deleteMember, deleteAllMembers } = useData();
+  const { currentUser, isAdmin, canDelete } = useAuth();
 
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showDeleteAll, setShowDeleteAll] = useState(false);
+  const [showCsvModal, setShowCsvModal] = useState(false);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
 
   // Form Fields
   const [fullName, setFullName] = useState('');
@@ -120,6 +126,17 @@ export const RegistryView: React.FC = () => {
 
   const filteredMembers = searchMembers(members, searchQuery, sportFilter, roleFilter);
 
+  const previewColumns: PreviewColumn<DelegationMember>[] = [
+    { header: 'Accreditation ID', accessor: (m) => m.accreditationNumber, className: 'font-mono text-xs font-semibold' },
+    { header: 'Full Name', accessor: (m) => m.fullName, className: 'font-bold text-slate-900 dark:text-white' },
+    { header: 'Role', accessor: (m) => m.role, className: 'font-semibold' },
+    { header: 'Sport', accessor: (m) => m.sport, className: 'font-semibold text-emerald-600 dark:text-emerald-400' },
+    { header: 'Gender/Age', accessor: (m) => `${m.gender}, ${m.age}y` },
+    { header: 'Billeting Quarters', accessor: (m) => m.billetingRoom },
+    { header: 'Emergency Contact', accessor: (m) => m.emergencyContact, className: 'font-mono' },
+    { header: 'Status', accessor: (m) => m.status },
+  ];
+
   return (
     <div className="space-y-6 pb-20 lg:pb-8">
       
@@ -137,7 +154,29 @@ export const RegistryView: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Preview List Command Button */}
+          <button
+            type="button"
+            onClick={() => setShowPreviewModal(true)}
+            className="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 shrink-0 border border-slate-300 dark:border-slate-700"
+            title="View display-only printable tabular report"
+          >
+            <Table className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+            <span>Preview List</span>
+          </button>
+
+          {/* Upload CSV Command Button */}
+          <button
+            type="button"
+            onClick={() => setShowCsvModal(true)}
+            className="px-3.5 py-2.5 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/40 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-blue-800 font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 shrink-0"
+            title="Bulk import delegation members via CSV"
+          >
+            <Upload className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+            <span>Upload CSV</span>
+          </button>
+
           {isAdmin && members.length > 0 && (
             <button
               type="button"
@@ -466,12 +505,14 @@ export const RegistryView: React.FC = () => {
                 >
                   <Pencil className="w-3.5 h-3.5" /> Edit
                 </button>
-                <button
-                  onClick={() => setDeleteTarget({ id: m.id, name: m.fullName })}
-                  className="px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 rounded-lg transition-colors flex items-center gap-1"
-                >
-                  <Trash2 className="w-3.5 h-3.5" /> Delete
-                </button>
+                {canDelete && (
+                  <button
+                    onClick={() => setDeleteTarget({ id: m.id, name: m.fullName })}
+                    className="px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 rounded-lg transition-colors flex items-center gap-1"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" /> Delete
+                  </button>
+                )}
               </div>
             </div>
           ))
@@ -494,6 +535,24 @@ export const RegistryView: React.FC = () => {
         itemCount={members.length}
         onConfirm={deleteAllMembers}
         onClose={() => setShowDeleteAll(false)}
+      />
+
+      {/* CSV Bulk Import Modal */}
+      <CsvUploadModal
+        isOpen={showCsvModal}
+        onClose={() => setShowCsvModal(false)}
+        onImport={batchAddMembers}
+      />
+
+      {/* Preview Tabular Report Modal */}
+      <PreviewListModal
+        isOpen={showPreviewModal}
+        onClose={() => setShowPreviewModal(false)}
+        moduleTitle="Delegation Members Masterlist"
+        data={members}
+        columns={previewColumns}
+        getItemSport={(m) => m.sport}
+        getItemId={(m) => m.id}
       />
 
     </div>

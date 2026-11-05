@@ -13,22 +13,25 @@ import {
   Search, 
   Filter, 
   Award, 
-  Timer 
+  Timer,
+  Table
 } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { calculateDurationMinutes, computeTrainingSummary } from '../utils/pureLogic';
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
 import { AdminDeleteAllModal } from './AdminDeleteAllModal';
+import { PreviewListModal, PreviewColumn } from './PreviewListModal';
 import { SportType, TrainingRecord } from '../types';
 
 export const TrainingView: React.FC = () => {
   const { members, trainingLogs, saveTraining, deleteTraining, deleteAllTrainingLogs } = useData();
-  const { currentUser, isAdmin } = useAuth();
+  const { currentUser, isAdmin, canDelete } = useAuth();
 
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showDeleteAll, setShowDeleteAll] = useState(false);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
 
   // Form Fields
   const [date, setDate] = useState('2026-12-10');
@@ -142,6 +145,18 @@ export const TrainingView: React.FC = () => {
     return true;
   });
 
+  const previewColumns: PreviewColumn<TrainingRecord>[] = [
+    { header: 'Date', accessor: (t) => t.date, className: 'font-mono text-xs' },
+    { header: 'Time Window', accessor: (t) => `${t.startTime} - ${t.endTime}`, className: 'font-bold' },
+    { header: 'Sport', accessor: (t) => t.sport, className: 'font-semibold text-purple-600 dark:text-purple-400' },
+    { header: 'Drill Focus', accessor: (t) => t.drillFocus, className: 'font-bold text-slate-900 dark:text-white' },
+    { header: 'Duration', accessor: (t) => `${t.durationMinutes} min (${(t.durationMinutes / 60).toFixed(1)}h)` },
+    { header: 'Venue', accessor: (t) => t.venue },
+    { header: 'Coach in Charge', accessor: (t) => t.coachInCharge },
+    { header: 'Participants', accessor: (t) => t.participatingAthletes?.join(', ') || 'All Athletes' },
+    { header: 'Coach Feedback', accessor: (t) => t.notes || '-' },
+  ];
+
   return (
     <div className="space-y-6 pb-20 lg:pb-8">
       
@@ -159,7 +174,18 @@ export const TrainingView: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Preview List Command Button */}
+          <button
+            type="button"
+            onClick={() => setShowPreviewModal(true)}
+            className="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 shrink-0 border border-slate-300 dark:border-slate-700"
+            title="View display-only printable tabular report"
+          >
+            <Table className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+            <span>Preview List</span>
+          </button>
+
           {isAdmin && trainingLogs.length > 0 && (
             <button
               type="button"
@@ -524,14 +550,16 @@ export const TrainingView: React.FC = () => {
                     </button>
 
                     {/* DELETE BUTTON */}
-                    <button
-                      onClick={() => setDeleteTarget({ id: item.id, desc: `${item.drillFocus} (${item.sport})` })}
-                      className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 rounded-lg transition-colors"
-                      title="Delete Training Log"
-                      aria-label={`Delete ${item.drillFocus}`}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {canDelete && (
+                      <button
+                        onClick={() => setDeleteTarget({ id: item.id, desc: `${item.drillFocus} (${item.sport})` })}
+                        className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 rounded-lg transition-colors"
+                        title="Delete Training Log"
+                        aria-label={`Delete ${item.drillFocus}`}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -582,6 +610,17 @@ export const TrainingView: React.FC = () => {
         itemCount={trainingLogs.length}
         onConfirm={deleteAllTrainingLogs}
         onClose={() => setShowDeleteAll(false)}
+      />
+
+      {/* Preview Tabular Report Modal */}
+      <PreviewListModal
+        isOpen={showPreviewModal}
+        onClose={() => setShowPreviewModal(false)}
+        moduleTitle="Training & Practice Monitoring"
+        data={trainingLogs}
+        columns={previewColumns}
+        getItemSport={(t) => t.sport}
+        getItemId={(t) => t.id}
       />
 
     </div>

@@ -102,10 +102,19 @@ export interface TrainingRecord {
   updatedAt?: string;
 }
 
+export type MealType = 
+  | 'Breakfast' 
+  | 'AM Snack' 
+  | 'Lunch' 
+  | 'PM Snack' 
+  | 'Dinner' 
+  | 'Sports Drink' 
+  | 'Vitamins';
+
 export interface MealRecord {
   id: string;
   date: string;
-  mealType: 'Breakfast' | 'Lunch' | 'Dinner' | 'PM Snack';
+  mealType: MealType;
   memberId: string;
   memberName: string;
   memberRole: string;
@@ -147,6 +156,9 @@ export interface AppUserRecord {
   role: UserRole;
   sport?: SportType;
   status: 'Active' | 'Inactive' | 'Suspended';
+  canDelete?: boolean; // Admin-controlled delete permission
+  canPrint?: boolean; // Admin-controlled print report permission in preview modal
+  canExportCsv?: boolean; // Admin-controlled export to CSV permission in preview modal
   createdAt: string;
   lastLogin?: string;
 }

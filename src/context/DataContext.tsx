@@ -23,7 +23,8 @@ import {
   MealRecord, 
   AuditRecord, 
   PushAlert, 
-  SportType 
+  SportType,
+  MealType
 } from '../types';
 
 interface DataContextType {
@@ -39,6 +40,7 @@ interface DataContextType {
   
   // Member actions
   saveMember: (member: Omit<DelegationMember, 'id' | 'createdAt' | 'env'>, id?: string) => Promise<void>;
+  batchAddMembers: (membersList: Omit<DelegationMember, 'id' | 'createdAt' | 'env'>[]) => Promise<number>;
   deleteMember: (id: string, name: string) => Promise<void>;
   deleteAllMembers: () => Promise<void>;
 
@@ -64,7 +66,7 @@ interface DataContextType {
 
   // Meal distribution actions
   claimMeal: (mealId: string, claimed: boolean, claimedBy: string) => Promise<void>;
-  batchCreateMealsForDate: (date: string, mealType: 'Breakfast' | 'Lunch' | 'Dinner' | 'PM Snack') => Promise<number>;
+  batchCreateMealsForDate: (date: string, mealType: MealType) => Promise<number>;
   deleteMealRecord: (id: string) => Promise<void>;
   deleteAllMealLogs: () => Promise<void>;
 
@@ -81,7 +83,7 @@ const DataContext = createContext<DataContextType>({} as DataContextType);
 
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { env } = useDatabaseEnv();
-  const { currentUser } = useAuth();
+  const { currentUser, canDelete } = useAuth();
   const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'offline'>('synced');
 
   // Datasets filtered by active environment
@@ -194,7 +196,42 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const batchAddMembers = async (membersList: Omit<DelegationMember, 'id' | 'createdAt' | 'env'>[]): Promise<number> => {
+    let count = 0;
+    const createdMembers: DelegationMember[] = [];
+    for (const m of membersList) {
+      const memberId = 'mem_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+      const docData: DelegationMember = {
+        ...m,
+        id: memberId,
+        env,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      createdMembers.push(docData);
+      setDoc(doc(db, 'members', memberId), docData).catch(() => {});
+      count++;
+    }
+    setMembers(prev => [...createdMembers, ...prev]);
+    if (currentUser) {
+      await logAuditEvent(
+        currentUser.email,
+        currentUser.fullName,
+        currentUser.role,
+        'USER_MANAGEMENT',
+        `Batch imported ${count} members via CSV upload into ${env.toUpperCase()} database`,
+        'MEMBERS',
+        env
+      );
+    }
+    return count;
+  };
+
   const deleteMember = async (id: string, name: string) => {
+    if (!canDelete) {
+      alert('Delete permission is disabled for your user account.');
+      return;
+    }
     try {
       await deleteDoc(doc(db, 'members', id));
     } catch (e) {
@@ -619,7 +656,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const batchCreateMealsForDate = async (date: string, mealType: 'Breakfast' | 'Lunch' | 'Dinner' | 'PM Snack') => {
+  const batchCreateMealsForDate = async (date: string, mealType: MealType) => {
     // Generate meal voucher records for all active members in this environment
     let count = 0;
     const newRecords: MealRecord[] = [];
@@ -628,7 +665,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Check if meal already exists for this member on this date & mealType
       const existing = mealLogs.some(m => m.date === date && m.mealType === mealType && m.memberId === mem.id);
       if (!existing) {
-        const id = `meal_${date}_${mealType}_${mem.id}`;
+        const id = `meal_${date}_${mealType.replace(/\s+/g, '_')}_${mem.id}`;
         const record: MealRecord = {
           id,
           date,
@@ -892,6 +929,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         notifications,
         syncStatus,
         saveMember,
+        batchAddMembers,
         deleteMember,
         deleteAllMembers,
         submitCheckIn,

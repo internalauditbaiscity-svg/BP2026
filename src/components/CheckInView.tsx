@@ -14,14 +14,16 @@ import {
   X,
   Send,
   Building,
-  Activity
+  Activity,
+  Table
 } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { useDatabaseEnv } from '../context/DatabaseEnvContext';
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
 import { AdminDeleteAllModal } from './AdminDeleteAllModal';
-import { SportType } from '../types';
+import { PreviewListModal, PreviewColumn } from './PreviewListModal';
+import { SportType, CheckInRecord } from '../types';
 
 const COMMON_LOCATIONS = [
   'Billeting Quarters (Bais Delegation Hotel)',
@@ -51,12 +53,13 @@ const COMMON_ACTIVITIES = [
 
 export const CheckInView: React.FC = () => {
   const { members, checkins, submitCheckIn, deleteCheckIn, deleteAllCheckIns } = useData();
-  const { currentUser, isAdmin } = useAuth();
+  const { currentUser, isAdmin, canDelete } = useAuth();
   const { env } = useDatabaseEnv();
 
   // Form states
   const [showForm, setShowForm] = useState(false);
   const [showDeleteAll, setShowDeleteAll] = useState(false);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [date, setDate] = useState('2026-12-10');
   const [startTime, setStartTime] = useState('06:00');
   const [endTime, setEndTime] = useState('07:30');
@@ -168,6 +171,17 @@ export const CheckInView: React.FC = () => {
     return true;
   });
 
+  const previewColumns: PreviewColumn<CheckInRecord>[] = [
+    { header: 'Date', accessor: (c) => c.date, className: 'font-mono text-xs' },
+    { header: 'Time Window', accessor: (c) => c.timeWindow, className: 'font-bold text-slate-800 dark:text-slate-200' },
+    { header: 'Sport', accessor: (c) => c.sport, className: 'font-semibold text-emerald-600 dark:text-emerald-400' },
+    { header: 'Location / Venue', accessor: (c) => c.location, className: 'font-medium' },
+    { header: 'Activity', accessor: (c) => c.activity },
+    { header: 'Participants', accessor: (c) => c.participantNames?.join(', ') || 'N/A' },
+    { header: 'Submitted By', accessor: (c) => `${c.submittedBy} (${c.submittedByRole})` },
+    { header: 'Remarks', accessor: (c) => c.remarks || '-' },
+  ];
+
   return (
     <div className="space-y-6 pb-20 lg:pb-8">
       
@@ -185,7 +199,18 @@ export const CheckInView: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Preview List Command Button */}
+          <button
+            type="button"
+            onClick={() => setShowPreviewModal(true)}
+            className="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 shrink-0 border border-slate-300 dark:border-slate-700"
+            title="View display-only printable tabular report"
+          >
+            <Table className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+            <span>Preview List</span>
+          </button>
+
           {isAdmin && checkins.length > 0 && (
             <button
               type="button"
@@ -536,14 +561,16 @@ export const CheckInView: React.FC = () => {
                     <div className="text-[11px] text-slate-500">{chk.date}</div>
                   </div>
 
-                  <button
-                    onClick={() => setDeleteTarget({ id: chk.id, desc: `${chk.location} (${chk.timeWindow})` })}
-                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 rounded-xl transition-colors"
-                    title="Delete Check-In Record"
-                    aria-label={`Delete check-in at ${chk.location}`}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  {canDelete && (
+                    <button
+                      onClick={() => setDeleteTarget({ id: chk.id, desc: `${chk.location} (${chk.timeWindow})` })}
+                      className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 rounded-xl transition-colors"
+                      title="Delete Check-In Record"
+                      aria-label={`Delete check-in at ${chk.location}`}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -598,6 +625,17 @@ export const CheckInView: React.FC = () => {
         itemCount={checkins.length}
         onConfirm={deleteAllCheckIns}
         onClose={() => setShowDeleteAll(false)}
+      />
+
+      {/* Preview Tabular Report Modal */}
+      <PreviewListModal
+        isOpen={showPreviewModal}
+        onClose={() => setShowPreviewModal(false)}
+        moduleTitle="Whereabouts & Check-In Log"
+        data={checkins}
+        columns={previewColumns}
+        getItemSport={(c) => c.sport}
+        getItemId={(c) => c.id}
       />
 
     </div>
