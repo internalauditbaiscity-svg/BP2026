@@ -3,7 +3,7 @@ import { Shield, KeyRound, LogIn, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export const LoginModal: React.FC = () => {
-  const { currentUser, loginWithCredentials, loginWithGoogle, loading } = useAuth();
+  const { currentUser, loginWithCredentials, loginWithGoogle, loading, roleUpdateNotice, clearRoleUpdateNotice } = useAuth();
   const [emailInput, setEmailInput] = useState('');
   const [pinInput, setPinInput] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -50,6 +50,17 @@ export const LoginModal: React.FC = () => {
               Please enter your authorized credentials to access attendance, training & reporting.
             </p>
           </div>
+
+          {/* Role access update notification */}
+          {roleUpdateNotice && (
+            <div className="p-3.5 bg-amber-50 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-800 rounded-xl text-xs text-amber-800 dark:text-amber-200 flex items-start gap-2.5 animate-in fade-in">
+              <AlertCircle className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+              <div className="space-y-1">
+                <span className="font-bold block">User Access Update Triggered</span>
+                <p className="text-[11px] leading-relaxed">{roleUpdateNotice}</p>
+              </div>
+            </div>
+          )}
 
           {errorMsg && (
             <div className="p-3 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900/60 rounded-xl text-xs text-red-700 dark:text-red-300 flex items-center gap-2">

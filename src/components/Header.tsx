@@ -34,15 +34,18 @@ export const Header: React.FC<HeaderProps> = ({ onOpenNotifications, isDark, tog
         
         {/* Brand & Title */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-md shadow-emerald-600/20 shrink-0">
-            <Shield className="w-6 h-6" />
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-700 via-indigo-600 to-amber-500 flex items-center justify-center text-white shadow-md shadow-blue-700/25 shrink-0">
+            <Shield className="w-6 h-6 text-amber-200" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="font-extrabold text-base sm:text-lg tracking-tight text-slate-900 dark:text-white leading-tight">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <h1 className="font-black text-base sm:text-lg tracking-tight text-slate-900 dark:text-white leading-tight">
                 BAIS CITY
               </h1>
-              <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 uppercase tracking-wider">
+              <span className="text-[9px] sm:text-[10px] font-black px-1.5 py-0.5 rounded-md bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 uppercase tracking-wider border border-amber-300/40">
+                Matahum nga Bais
+              </span>
+              <span className="hidden sm:inline-block text-[10px] font-extrabold px-1.5 py-0.5 rounded-md bg-blue-100 dark:bg-blue-950/80 text-blue-800 dark:text-blue-300 uppercase tracking-wider">
                 Batang Pinoy 2026
               </span>
             </div>

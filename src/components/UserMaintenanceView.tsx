@@ -13,7 +13,8 @@ import {
   Mail, 
   Award,
   Printer,
-  Download
+  Download,
+  Upload
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
@@ -29,7 +30,9 @@ export const UserMaintenanceView: React.FC = () => {
     updateUserRole, 
     toggleUserDeletePermission,
     toggleUserPrintPermission,
-    toggleUserCsvPermission
+    toggleUserCsvPermission,
+    toggleUserUploadCsvPermission,
+    refreshUsers
   } = useAuth();
 
   const [showAddForm, setShowAddForm] = useState(false);
@@ -41,6 +44,7 @@ export const UserMaintenanceView: React.FC = () => {
   const [canDeleteAllowed, setCanDeleteAllowed] = useState(true);
   const [canPrintAllowed, setCanPrintAllowed] = useState(true);
   const [canExportCsvAllowed, setCanExportCsvAllowed] = useState(true);
+  const [canUploadCsvAllowed, setCanUploadCsvAllowed] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Edit role modal state
@@ -50,6 +54,7 @@ export const UserMaintenanceView: React.FC = () => {
   const [editCanDelete, setEditCanDelete] = useState(true);
   const [editCanPrint, setEditCanPrint] = useState(true);
   const [editCanExportCsv, setEditCanExportCsv] = useState(true);
+  const [editCanUploadCsv, setEditCanUploadCsv] = useState(true);
 
   // Delete modal
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
@@ -87,6 +92,7 @@ export const UserMaintenanceView: React.FC = () => {
         canDelete: canDeleteAllowed,
         canPrint: canPrintAllowed,
         canExportCsv: canExportCsvAllowed,
+        canUploadCsv: canUploadCsvAllowed,
       });
 
       setShowAddForm(false);
@@ -95,6 +101,7 @@ export const UserMaintenanceView: React.FC = () => {
       setCanDeleteAllowed(true);
       setCanPrintAllowed(true);
       setCanExportCsvAllowed(true);
+      setCanUploadCsvAllowed(true);
     } catch (err) {
       console.error(err);
     } finally {
@@ -109,16 +116,17 @@ export const UserMaintenanceView: React.FC = () => {
     setEditCanDelete(u.canDelete !== false);
     setEditCanPrint(u.canPrint !== false);
     setEditCanExportCsv(u.canExportCsv !== false);
+    setEditCanUploadCsv(u.canUploadCsv !== false);
   };
 
   const handleSaveEditRole = async () => {
     if (!editingUser) return;
-    await updateUserRole(editingUser.id, editRole, editSport);
-    if (editingUser.role !== 'Administrator') {
-      await toggleUserDeletePermission(editingUser.id, editCanDelete);
-      await toggleUserPrintPermission(editingUser.id, editCanPrint);
-      await toggleUserCsvPermission(editingUser.id, editCanExportCsv);
-    }
+    await updateUserRole(editingUser.id, editRole, editSport, {
+      canDelete: editCanDelete,
+      canPrint: editCanPrint,
+      canExportCsv: editCanExportCsv,
+      canUploadCsv: editCanUploadCsv,
+    });
     setEditingUser(null);
   };
 
@@ -309,7 +317,7 @@ export const UserMaintenanceView: React.FC = () => {
             <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
               Feature & Command Permissions
             </span>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <label className="flex items-center gap-2 cursor-pointer p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60">
                 <input
                   type="checkbox"
@@ -346,6 +354,19 @@ export const UserMaintenanceView: React.FC = () => {
                 <div className="text-xs">
                   <span className="font-bold text-slate-800 dark:text-slate-200 block">Export to CSV</span>
                   <span className="text-[10px] text-slate-500">Preview modal export</span>
+                </div>
+              </label>
+
+              <label className="flex items-center gap-2 cursor-pointer p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60">
+                <input
+                  type="checkbox"
+                  checked={canUploadCsvAllowed}
+                  onChange={(e) => setCanUploadCsvAllowed(e.target.checked)}
+                  className="w-4 h-4 text-emerald-600 rounded-sm"
+                />
+                <div className="text-xs">
+                  <span className="font-bold text-slate-800 dark:text-slate-200 block">Upload CSV (Registry)</span>
+                  <span className="text-[10px] text-slate-500">Bulk import members</span>
                 </div>
               </label>
             </div>
@@ -392,6 +413,7 @@ export const UserMaintenanceView: React.FC = () => {
                 <th className="py-3 px-2.5">Delete Rights</th>
                 <th className="py-3 px-2.5">Print Report</th>
                 <th className="py-3 px-2.5">Export CSV</th>
+                <th className="py-3 px-2.5">Upload CSV</th>
                 <th className="py-3 px-2.5">Status</th>
                 <th className="py-3 px-2.5">Created</th>
                 <th className="py-3 px-3 text-right">Actions</th>
@@ -506,6 +528,36 @@ export const UserMaintenanceView: React.FC = () => {
                           title="Click to toggle Export to CSV permission in preview modal for this user"
                         >
                           {u.canExportCsv !== false ? (
+                            <>
+                              <Check className="w-3 h-3 text-emerald-600" />
+                              <span>Allowed</span>
+                            </>
+                          ) : (
+                            <>
+                              <X className="w-3 h-3 text-rose-600" />
+                              <span>Disabled</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </td>
+                    <td className="py-3 px-2.5">
+                      {u.role === 'Administrator' ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-lg border border-emerald-200 dark:border-emerald-800">
+                          <Check className="w-3 h-3" /> Admin Protected
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => toggleUserUploadCsvPermission(u.id, u.canUploadCsv === false ? true : false)}
+                          className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 border shadow-2xs ${
+                            u.canUploadCsv !== false
+                              ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800 hover:bg-emerald-100'
+                              : 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-800 hover:bg-rose-100'
+                          }`}
+                          title="Click to toggle Registry CSV Upload permission for this user"
+                        >
+                          {u.canUploadCsv !== false ? (
                             <>
                               <Check className="w-3 h-3 text-emerald-600" />
                               <span>Allowed</span>
@@ -649,6 +701,19 @@ export const UserMaintenanceView: React.FC = () => {
                   <div className="text-xs">
                     <span className="font-bold text-slate-900 dark:text-white block">Allow Export to CSV</span>
                     <span className="text-slate-500 text-[11px]">Display Export CSV button in preview modal.</span>
+                  </div>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60">
+                  <input
+                    type="checkbox"
+                    checked={editCanUploadCsv}
+                    onChange={(e) => setEditCanUploadCsv(e.target.checked)}
+                    className="w-4 h-4 text-emerald-600 rounded-sm"
+                  />
+                  <div className="text-xs">
+                    <span className="font-bold text-slate-900 dark:text-white block">Allow Registry CSV Upload</span>
+                    <span className="text-slate-500 text-[11px]">Display Upload CSV button in Registry module.</span>
                   </div>
                 </label>
               </div>

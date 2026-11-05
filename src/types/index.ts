@@ -159,6 +159,9 @@ export interface AppUserRecord {
   canDelete?: boolean; // Admin-controlled delete permission
   canPrint?: boolean; // Admin-controlled print report permission in preview modal
   canExportCsv?: boolean; // Admin-controlled export to CSV permission in preview modal
+  canUploadCsv?: boolean; // Admin-controlled CSV bulk upload permission in Registry
+  roleVersion?: number; // Incremented on role/permission updates to force re-authentication
+  lastRoleUpdate?: string;
   createdAt: string;
   lastLogin?: string;
 }

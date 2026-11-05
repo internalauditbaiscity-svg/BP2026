@@ -27,7 +27,7 @@ import { DelegationMember, SportType } from '../types';
 
 export const RegistryView: React.FC = () => {
   const { members, saveMember, batchAddMembers, deleteMember, deleteAllMembers } = useData();
-  const { currentUser, isAdmin, canDelete } = useAuth();
+  const { currentUser, isAdmin, canDelete, canUploadCsv } = useAuth();
 
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -166,16 +166,18 @@ export const RegistryView: React.FC = () => {
             <span>Preview List</span>
           </button>
 
-          {/* Upload CSV Command Button */}
-          <button
-            type="button"
-            onClick={() => setShowCsvModal(true)}
-            className="px-3.5 py-2.5 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/40 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-blue-800 font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 shrink-0"
-            title="Bulk import delegation members via CSV"
-          >
-            <Upload className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-            <span>Upload CSV</span>
-          </button>
+          {/* Upload CSV Command Button (Administrator-Controlled User Role Access) */}
+          {(isAdmin || canUploadCsv) && (
+            <button
+              type="button"
+              onClick={() => setShowCsvModal(true)}
+              className="px-3.5 py-2.5 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/40 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-blue-800 font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 shrink-0"
+              title="Bulk import delegation members via CSV (Authorized Access)"
+            >
+              <Upload className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+              <span>Upload CSV</span>
+            </button>
+          )}
 
           {isAdmin && members.length > 0 && (
             <button
@@ -538,11 +540,13 @@ export const RegistryView: React.FC = () => {
       />
 
       {/* CSV Bulk Import Modal */}
-      <CsvUploadModal
-        isOpen={showCsvModal}
-        onClose={() => setShowCsvModal(false)}
-        onImport={batchAddMembers}
-      />
+      {(isAdmin || canUploadCsv) && (
+        <CsvUploadModal
+          isOpen={showCsvModal}
+          onClose={() => setShowCsvModal(false)}
+          onImport={batchAddMembers}
+        />
+      )}
 
       {/* Preview Tabular Report Modal */}
       <PreviewListModal

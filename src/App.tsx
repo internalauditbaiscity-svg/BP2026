@@ -56,21 +56,31 @@ const MainLayout: React.FC = () => {
         toggleDark={toggleDark}
       />
 
-      {/* Main Navigation (Tabs) */}
-      <Navigation activeTab={activeTab} setActiveTab={setActiveTab} />
+      {/* Main Layout: Views on Left/Center, Module Navigation on the Right */}
+      <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 pt-5 pb-20 lg:pb-8 flex flex-col lg:flex-row items-start gap-6">
+        {/* Left / Center Area: Main Content Views */}
+        <main className="flex-1 min-w-0 w-full">
+          {activeTab === 'dashboard' && <DashboardView onNavigate={setActiveTab} />}
+          {activeTab === 'checkin' && <CheckInView />}
+          {activeTab === 'training' && <TrainingView />}
+          {activeTab === 'health' && <HealthView />}
+          {activeTab === 'winloss' && <WinLossView />}
+          {activeTab === 'meals' && <MealView />}
+          {activeTab === 'registry' && <RegistryView />}
+          {activeTab === 'reports' && <ReportsView />}
+          {activeTab === 'maintenance' && <UserMaintenanceView />}
+        </main>
 
-      {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 pt-6">
-        {activeTab === 'dashboard' && <DashboardView onNavigate={setActiveTab} />}
-        {activeTab === 'checkin' && <CheckInView />}
-        {activeTab === 'training' && <TrainingView />}
-        {activeTab === 'health' && <HealthView />}
-        {activeTab === 'winloss' && <WinLossView />}
-        {activeTab === 'meals' && <MealView />}
-        {activeTab === 'registry' && <RegistryView />}
-        {activeTab === 'reports' && <ReportsView />}
-        {activeTab === 'maintenance' && <UserMaintenanceView />}
-      </main>
+        {/* Right Side: Module Menu Sidebar (Desktop) */}
+        <aside className="hidden lg:block w-64 xl:w-72 shrink-0">
+          <Navigation activeTab={activeTab} setActiveTab={setActiveTab} />
+        </aside>
+      </div>
+
+      {/* Mobile Bottom Navigation */}
+      <div className="lg:hidden">
+        <Navigation activeTab={activeTab} setActiveTab={setActiveTab} isMobileOnly />
+      </div>
 
       {/* Push Notification & Broadcast Modal */}
       <NotificationModal
