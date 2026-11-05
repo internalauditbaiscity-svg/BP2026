@@ -9,7 +9,8 @@ import {
   LogOut, 
   Database, 
   FlaskConical, 
-  UserCheck 
+  UserCheck,
+  Menu
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useDatabaseEnv } from '../context/DatabaseEnvContext';
@@ -19,9 +20,15 @@ interface HeaderProps {
   onOpenNotifications: () => void;
   isDark: boolean;
   toggleDark: () => void;
+  onToggleMobileMenu?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onOpenNotifications, isDark, toggleDark }) => {
+export const Header: React.FC<HeaderProps> = ({ 
+  onOpenNotifications, 
+  isDark, 
+  toggleDark,
+  onToggleMobileMenu 
+}) => {
   const { currentUser, logout, isAdmin } = useAuth();
   const { env, setEnv, isLive } = useDatabaseEnv();
   const { syncStatus, notifications } = useData();
@@ -32,8 +39,19 @@ export const Header: React.FC<HeaderProps> = ({ onOpenNotifications, isDark, tog
     <header className="sticky top-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors shadow-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
         
-        {/* Brand & Title */}
-        <div className="flex items-center gap-3">
+        {/* Brand & Left Navigation Toggle */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          {onToggleMobileMenu && (
+            <button
+              onClick={onToggleMobileMenu}
+              className="lg:hidden p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors shrink-0 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+              title="Open Left Module Menu"
+              aria-label="Open Left Module Menu"
+            >
+              <Menu className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            </button>
+          )}
+
           <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-700 via-indigo-600 to-amber-500 flex items-center justify-center text-white shadow-md shadow-blue-700/25 shrink-0">
             <Shield className="w-6 h-6 text-amber-200" />
           </div>

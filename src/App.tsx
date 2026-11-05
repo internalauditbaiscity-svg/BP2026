@@ -21,6 +21,7 @@ const MainLayout: React.FC = () => {
   const { currentUser, isAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDark, setIsDark] = useState<boolean>(() => {
     return localStorage.getItem('bais_theme') === 'dark' || 
       window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -49,15 +50,35 @@ const MainLayout: React.FC = () => {
       {/* Secure Login Modal (shown if unauthenticated) */}
       <LoginModal />
 
-      {/* App Header */}
+      {/* App Header with Mobile Left-Menu Toggle Button */}
       <Header
         onOpenNotifications={() => setIsNotificationsOpen(true)}
         isDark={isDark}
         toggleDark={toggleDark}
+        onToggleMobileMenu={() => setIsMobileMenuOpen(prev => !prev)}
       />
 
-      {/* Main Layout: Views on Left/Center, Module Navigation on the Right */}
-      <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 pt-5 pb-20 lg:pb-8 flex flex-col lg:flex-row items-start gap-6">
+      {/* Mobile & Tablet Top Horizontal Module Bar (<lg) */}
+      <div className="lg:hidden border-b border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md sticky top-[61px] z-20 shadow-2xs">
+        <Navigation 
+          activeTab={activeTab} 
+          setActiveTab={setActiveTab} 
+          isTopBar 
+          onOpenLeftDrawer={() => setIsMobileMenuOpen(true)} 
+        />
+      </div>
+
+      {/* Mobile & Tablet Slide-Over Left Menu Drawer (<lg) */}
+      <Navigation
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        isLeftDrawer
+        isOpen={isMobileMenuOpen}
+        onClose={() => setIsMobileMenuOpen(false)}
+      />
+
+      {/* Main Layout: Views on Left/Center, Desktop Module Navigation on the Right */}
+      <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 pt-5 pb-8 flex flex-col lg:flex-row items-start gap-6">
         {/* Left / Center Area: Main Content Views */}
         <main className="flex-1 min-w-0 w-full">
           {activeTab === 'dashboard' && <DashboardView onNavigate={setActiveTab} />}
@@ -71,15 +92,10 @@ const MainLayout: React.FC = () => {
           {activeTab === 'maintenance' && <UserMaintenanceView />}
         </main>
 
-        {/* Right Side: Module Menu Sidebar (Desktop) */}
+        {/* Right Side: Module Menu Sidebar (Desktop >= lg) */}
         <aside className="hidden lg:block w-64 xl:w-72 shrink-0">
           <Navigation activeTab={activeTab} setActiveTab={setActiveTab} />
         </aside>
-      </div>
-
-      {/* Mobile Bottom Navigation */}
-      <div className="lg:hidden">
-        <Navigation activeTab={activeTab} setActiveTab={setActiveTab} isMobileOnly />
       </div>
 
       {/* Push Notification & Broadcast Modal */}
