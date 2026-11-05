@@ -17,9 +17,7 @@ import {
   Flame,
   Activity,
   CheckCircle2,
-  Clock,
-  Swords,
-  Timer
+  Clock
 } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { useDatabaseEnv } from '../context/DatabaseEnvContext';
@@ -60,15 +58,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   const recentCheckins = checkins.slice(0, 4);
 
   // The 8 Authorized Bais City sports disciplines
-  const sportsList: { name: SportType; category: string; iconLabel: string; gradient: string }[] = [
-    { name: 'Arnis', category: 'Martial Arts', iconLabel: '⚔️', gradient: 'from-amber-600 to-red-700' },
-    { name: 'Taekwondo', category: 'Combat Sports', iconLabel: '🥋', gradient: 'from-blue-600 to-indigo-700' },
-    { name: 'Athletics', category: 'Track & Field', iconLabel: '🏃', gradient: 'from-emerald-600 to-teal-700' },
-    { name: 'Futsal', category: 'Team Sport', iconLabel: '⚽', gradient: 'from-cyan-600 to-blue-700' },
-    { name: '3x3 Basketball', category: 'Ball Sport', iconLabel: '🏀', gradient: 'from-orange-600 to-amber-700' },
-    { name: 'Beach Volleyball', category: 'Coastal Sports', iconLabel: '🏐', gradient: 'from-yellow-600 to-amber-700' },
-    { name: 'Badminton', category: 'Racket Sport', iconLabel: '🏸', gradient: 'from-purple-600 to-indigo-700' },
-    { name: 'Table Tennis', category: 'Indoor Sport', iconLabel: '🏓', gradient: 'from-rose-600 to-pink-700' },
+  const sportsList: SportType[] = [
+    'Arnis',
+    'Taekwondo',
+    'Athletics',
+    'Futsal',
+    '3x3 Basketball',
+    'Beach Volleyball',
+    'Badminton',
+    'Table Tennis',
   ];
 
   return (
@@ -270,14 +268,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
       <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
-            <div className="flex items-center gap-2">
-              <span className="text-base font-black text-slate-900 dark:text-white">
-                Bais City Sports Delegation Disciplines
-              </span>
-              <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300">
-                8 Sports Arena
-              </span>
-            </div>
+            <h3 className="text-base font-black text-slate-900 dark:text-white">
+              Bais City Sports Delegation Disciplines
+            </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
               Authorized sports competing at the 2026 Batang Pinoy National Championships
             </p>
@@ -292,27 +285,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {sportsList.map((sport) => {
-            const count = members.filter(m => m.sport === sport.name).length;
-            const matches = winLossRecords.filter(w => w.sport === sport.name).length;
-            const hours = trainingSummary.hoursBySport[sport.name] || 0;
+          {sportsList.map((sportName) => {
+            const count = members.filter(m => m.sport === sportName).length;
+            const matches = winLossRecords.filter(w => w.sport === sportName).length;
 
             return (
               <div 
-                key={sport.name} 
+                key={sportName} 
                 onClick={() => onNavigate('winloss')}
-                className="p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/40 hover:border-blue-500 dark:hover:border-blue-500 hover:shadow-xs transition-all cursor-pointer group"
+                className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/40 hover:border-blue-500 dark:hover:border-blue-500 hover:shadow-xs transition-all cursor-pointer group flex flex-col justify-between"
               >
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-lg">{sport.iconLabel}</span>
-                  <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-200/80 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
-                    {sport.category}
-                  </span>
+                <div>
+                  <h4 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                    {sportName}
+                  </h4>
                 </div>
-                <h4 className="font-bold text-sm text-slate-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                  {sport.name}
-                </h4>
-                <div className="mt-2 pt-2 border-t border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+                <div className="mt-3 pt-2.5 border-t border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
                   <span className="font-semibold text-slate-700 dark:text-slate-300">{count} athletes</span>
                   <span className="font-bold text-emerald-600 dark:text-emerald-400">{matches} bouts</span>
                 </div>
