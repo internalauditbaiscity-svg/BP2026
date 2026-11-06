@@ -9,7 +9,8 @@ import {
   Calendar, 
   History, 
   CheckCircle,
-  Clock
+  Clock,
+  BookOpen
 } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
@@ -23,6 +24,7 @@ import {
   exportAuditCSV, 
   generateDelegationPDFReport 
 } from '../utils/exportReports';
+import { exportCoachManualPDF } from '../utils/exportCoachManualPDF';
 import { logAuditEvent } from '../utils/audit';
 import { computeTournamentTally, computeMealStats, computeTrainingSummary } from '../utils/pureLogic';
 
@@ -412,6 +414,32 @@ export const ReportsView: React.FC = () => {
               className="w-full py-2 px-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors"
             >
               <Download className="w-3.5 h-3.5 text-emerald-400" /> Export Full Audit CSV
+            </button>
+          </div>
+        </div>
+
+        {/* Coach Operations Manual & Playbook Card */}
+        <div className="p-5 rounded-2xl bg-gradient-to-br from-amber-500/10 via-amber-500/15 to-blue-600/10 border-2 border-amber-400/50 dark:border-amber-500/40 shadow-xs space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-amber-500 text-slate-950 font-bold">
+                <BookOpen className="w-4 h-4" />
+              </div>
+              <h4 className="font-bold text-slate-900 dark:text-white text-sm">Coach's Operations Playbook</h4>
+            </div>
+            <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-400 text-slate-950">
+              6-PAGE PDF
+            </span>
+          </div>
+          <p className="text-xs text-slate-600 dark:text-slate-300">
+            Official field manual for Bais City coaches: Whereabouts, Drills, Medical Holds, Bouts & Curfew protocols.
+          </p>
+          <div className="pt-2">
+            <button
+              onClick={exportCoachManualPDF}
+              className="w-full py-2.5 px-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-all shadow-sm active:scale-95"
+            >
+              <Download className="w-3.5 h-3.5" /> Download Printable Manual (PDF)
             </button>
           </div>
         </div>

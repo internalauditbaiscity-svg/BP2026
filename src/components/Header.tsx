@@ -10,7 +10,8 @@ import {
   Database, 
   FlaskConical, 
   UserCheck,
-  Menu
+  Menu,
+  BookOpen
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useDatabaseEnv } from '../context/DatabaseEnvContext';
@@ -21,13 +22,15 @@ interface HeaderProps {
   isDark: boolean;
   toggleDark: () => void;
   onToggleMobileMenu?: () => void;
+  onOpenCoachManual?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({ 
   onOpenNotifications, 
   isDark, 
   toggleDark,
-  onToggleMobileMenu 
+  onToggleMobileMenu,
+  onOpenCoachManual
 }) => {
   const { currentUser, logout, isAdmin } = useAuth();
   const { env, setEnv, isLive } = useDatabaseEnv();
@@ -123,6 +126,21 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="hidden sm:inline">PRACTICE</span>
             </button>
           </div>
+
+          {/* Coach Playbook PDF Manual Button (Administrator Only for Distribution & Control) */}
+          {isAdmin && onOpenCoachManual && (
+            <button
+              onClick={onOpenCoachManual}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/15 to-blue-600/15 hover:from-amber-500/25 hover:to-blue-600/25 text-slate-800 dark:text-slate-100 border border-amber-400/40 dark:border-amber-400/30 transition-all font-bold text-xs shadow-2xs group"
+              title="Open Coach's Operations Playbook & Download Printable PDF (Admin Distribution)"
+            >
+              <BookOpen className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform" />
+              <span className="hidden md:inline font-extrabold">Coach Playbook</span>
+              <span className="text-[9px] bg-amber-500 text-slate-950 font-black px-1.5 py-0.2 rounded-sm uppercase tracking-wider">
+                PDF
+              </span>
+            </button>
+          )}
 
           {/* Push Alert Bell */}
           <button

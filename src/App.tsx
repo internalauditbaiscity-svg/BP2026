@@ -15,12 +15,14 @@ import { ReportsView } from './components/ReportsView';
 import { UserMaintenanceView } from './components/UserMaintenanceView';
 import { LoginModal } from './components/LoginModal';
 import { NotificationModal } from './components/NotificationModal';
+import { CoachManualModal } from './components/CoachManualModal';
 import { testConnection } from './lib/firebase';
 
 const MainLayout: React.FC = () => {
   const { currentUser, isAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isCoachManualOpen, setIsCoachManualOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDark, setIsDark] = useState<boolean>(() => {
     return localStorage.getItem('bais_theme') === 'dark' || 
@@ -56,6 +58,7 @@ const MainLayout: React.FC = () => {
         isDark={isDark}
         toggleDark={toggleDark}
         onToggleMobileMenu={() => setIsMobileMenuOpen(prev => !prev)}
+        onOpenCoachManual={() => setIsCoachManualOpen(true)}
       />
 
       {/* Mobile & Tablet Top Horizontal Module Bar (<lg) */}
@@ -94,7 +97,10 @@ const MainLayout: React.FC = () => {
 
         {/* Right Side: Module Menu Sidebar (Desktop >= lg) */}
         <aside className="hidden lg:block w-64 xl:w-72 shrink-0">
-          <Navigation activeTab={activeTab} setActiveTab={setActiveTab} />
+          <Navigation 
+            activeTab={activeTab} 
+            setActiveTab={setActiveTab} 
+          />
         </aside>
       </div>
 
@@ -102,6 +108,12 @@ const MainLayout: React.FC = () => {
       <NotificationModal
         isOpen={isNotificationsOpen}
         onClose={() => setIsNotificationsOpen(false)}
+      />
+
+      {/* Coach's Operations Playbook & Printable PDF Modal */}
+      <CoachManualModal
+        isOpen={isCoachManualOpen}
+        onClose={() => setIsCoachManualOpen(false)}
       />
     </div>
   );

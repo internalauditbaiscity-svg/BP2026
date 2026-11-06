@@ -8,6 +8,7 @@ import {
   DelegationMember, 
   AuditRecord 
 } from '../types';
+export { exportCoachManualPDF } from './exportCoachManualPDF';
 
 /**
  * Triggers a download of a generated CSV string.
