@@ -63,9 +63,6 @@ export const Header: React.FC<HeaderProps> = ({
               <h1 className="font-black text-base sm:text-lg tracking-tight text-slate-900 dark:text-white leading-tight">
                 BAIS CITY
               </h1>
-              <span className="text-[9px] sm:text-[10px] font-black px-1.5 py-0.5 rounded-md bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 uppercase tracking-wider border border-amber-300/40">
-                Matahum nga Bais
-              </span>
               <span className="hidden sm:inline-block text-[10px] font-extrabold px-1.5 py-0.5 rounded-md bg-blue-100 dark:bg-blue-950/80 text-blue-800 dark:text-blue-300 uppercase tracking-wider">
                 Batang Pinoy 2026
               </span>
@@ -77,24 +74,36 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Action Controls & Environment Switcher */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-2.5 md:gap-3">
           
-          {/* Cloud Sync Status */}
-          <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+          {/* Cloud Sync Status (Visible on both mobile & desktop) */}
+          <div 
+            className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 shrink-0"
+            title={syncStatus === 'synced' ? 'Real-time cloud database connected' : syncStatus === 'syncing' ? 'Syncing changes to cloud...' : 'Working in local offline cache'}
+          >
             {syncStatus === 'synced' ? (
               <>
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[11px]">Cloud Synced</span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                <span className="text-[10px] sm:text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
+                  <span className="sm:hidden">Synced</span>
+                  <span className="hidden sm:inline">Cloud Synced</span>
+                </span>
               </>
             ) : syncStatus === 'syncing' ? (
               <>
-                <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
-                <span className="text-[11px]">Syncing...</span>
+                <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping shrink-0" />
+                <span className="text-[10px] sm:text-[11px] font-semibold text-amber-700 dark:text-amber-400">
+                  <span className="sm:hidden">Syncing</span>
+                  <span className="hidden sm:inline">Syncing...</span>
+                </span>
               </>
             ) : (
               <>
-                <span className="w-2 h-2 rounded-full bg-slate-400" />
-                <span className="text-[11px]">Offline Cache</span>
+                <span className="w-2 h-2 rounded-full bg-slate-400 shrink-0" />
+                <span className="text-[10px] sm:text-[11px] font-semibold text-slate-600 dark:text-slate-400">
+                  <span className="sm:hidden">Offline</span>
+                  <span className="hidden sm:inline">Offline Cache</span>
+                </span>
               </>
             )}
           </div>
